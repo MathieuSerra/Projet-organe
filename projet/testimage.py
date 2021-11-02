@@ -12,9 +12,11 @@ while True:
     ret0,frame0=cap0.read()
     small_frame = cv.resize(frame,(0,0),fx=0.5,fy=0.5)
     small_frame0 = cv.resize(frame0,(0,0),fx=0.5,fy=0.5)
+    inverted = cv.bitwise_not(small_frame)
+    gray_invert = cv.cvtColor(inverted, cv.COLOR_BGR2GRAY)
     image=np.zeros(frame.shape, np.uint8)
     image[:height//2,:width//2]=small_frame0
-    image[height//2:,:width//2]=small_frame
+    image[height//2:,:width//2]=inverted
     image[:height//2,width//2:]=small_frame
     image[height//2:,width//2:]=small_frame
     font = cv.FONT_HERSHEY_SIMPLEX
