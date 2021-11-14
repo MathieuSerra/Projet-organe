@@ -28,6 +28,7 @@ class Controller(QMainWindow):
     '''Class for the app's main window'''
 
     sig_update_progress = pyqtSignal(int) #Signal for progress bar in status bar
+    sig_update_motor_angle = pyqtSignal(int) ###
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -36,16 +37,21 @@ class Controller(QMainWindow):
         basepath = os.path.join(os.path.dirname(__file__))
         uic.loadUi(os.path.join(basepath,"interface.ui"), self)
 
+        # Initialize status variables
+        self.camera1Active = True
+        self.camera2Active = True
+        self.camera3Active = True
+
         # Initiate buttons
-        self.pushButton_cancel.clicked.connect(self.CancelFeed)
+        self.pushButton_camera1.clicked.connect(self.CancelFeed1)
+        self.pushButton_camera3.clicked.connect(self.FocusOnCam3)
 
         self.pushButton_rotateLeft.clicked.connect(self.rotate_left)
         self.pushButton_rotateRight.clicked.connect(self.rotate_right)
 
         # Start camera thread
         self.Thread1 = Camera1_Thread()
-        self.Thread1.start()
-        self.Thread1.ImageUpdate.connect(self.ImageUpdateSlot)
+        self.startCamera1()
 
         # Create status bar
         self.label_statusBar = QLabel()
@@ -56,6 +62,12 @@ class Controller(QMainWindow):
         self.progress_statusBar.setFixedWidth(250)
 
         self.sig_update_progress.connect(self.progress_statusBar.setValue)
+        self.sig_update_motor_angle.connect(self.updateAngle)
+
+    def startCamera1(self):
+        '''Start camera 1'''
+        self.Thread1.start()
+        self.Thread1.ImageUpdate.connect(self.ImageUpdateSlot)
 
     def ImageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
@@ -63,10 +75,25 @@ class Controller(QMainWindow):
 
         self.label_cameraTraitee.setPixmap(QPixmap.fromImage(Image)) ###
 
-    def CancelFeed(self):
-        '''Stops camera 1 feed'''
-        self.Thread1.stop()
+    def CancelFeed1(self):
+        '''Stop or activate camera 1 feed'''
+        if self.camera1Active:
+            self.Thread1.stop()
+            self.pushButton_camera1.setText('Activer')
+            self.camera1Active = False
+        else:
+            self.startCamera1()
+            self.pushButton_camera1.setText('Pauser')
+            self.camera1Active = True
+
+    def FocusOnCam3(self):###
+        ''' '''
+        self.groupBox_4.setGeometry(100,200,400,500)
     
+    def updateAngle(self, angle=0):
+        self.label_angle.setText('Angle : '+str(angle)+'°')
+
+
     def update_status_bar(self, text=''):
         '''Updates the status bar text'''
 
