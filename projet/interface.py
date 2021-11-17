@@ -6,7 +6,7 @@ import sys
 sys.path.append("..")
 import os
 import time
-import h5py
+#qimport h5py
 from datetime import datetime
 from tqdm import tqdm
 
@@ -23,6 +23,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import cv2
+# imported fluor
+img_fluoro=cv2.imread('fluoro_1.jpg')
 
 
 class Controller(QMainWindow):
@@ -45,6 +47,7 @@ class Controller(QMainWindow):
 
         # Initiate buttons
         self.pushButton_camera1.clicked.connect(self.CancelFeed1)
+        self.pushButton_camera2.clicked.connect(self.CancelFeed2)
         self.pushButton_camera3.clicked.connect(self.FocusOnCam3)
 
         self.pushButton_rotateLeft.clicked.connect(self.rotate_left)
@@ -53,6 +56,9 @@ class Controller(QMainWindow):
         # Start camera thread
         self.Thread1 = Camera1_Thread()
         self.startCamera1()
+
+        self.Thread2 = Camera2_Thread()
+        self.startCamera2()
 
         # Create status bar
         self.label_statusBar = QLabel()
@@ -74,11 +80,24 @@ class Controller(QMainWindow):
         except:
             self.show_error_popup('starting camera 1')
 
+    def startCamera2(self):
+        '''Start camera 2'''
+        try:
+            self.Thread2.start()
+            self.Thread2.ImageUpdate2.connect(self.ImageUpdateSlot2)
+        except:
+            self.show_error_popup('starting camera 2')
+
     def ImageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
         self.label_camera1.setPixmap(QPixmap.fromImage(Image))
 
         self.label_cameraTraitee.setPixmap(QPixmap.fromImage(Image)) ###
+
+    def ImageUpdateSlot2(self, Image):
+        '''Update camera 1 image with the images emitted by the thread'''
+        self.label_camera2.setPixmap(QPixmap.fromImage(Image))
+
 
     def CancelFeed1(self):
         '''Stop or activate camera 1 feed'''
@@ -92,6 +111,19 @@ class Controller(QMainWindow):
             self.pushButton_camera1.setText('Pauser')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
+
+    def CancelFeed2(self):
+        '''Stop or activate camera 1 feed'''
+        if self.camera2Active:
+            self.Thread2.stop()
+            self.pushButton_camera2.setText('Activer')
+            self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
+            self.camera2Active = False
+        else:
+            self.startCamera2()
+            self.pushButton_camera2.setText('Pauser')
+            self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
+            self.camera2Active = True
 
     def FocusOnCam3(self):###
         ''' '''
@@ -132,17 +164,52 @@ class Camera1_Thread(QThread):
     
     def run(self):
         self.ThreadActive = True
-        Capture = cv2.VideoCapture(0, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
+        Capture = cv2.VideoCapture(2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
+        #img=cv2.imread('fluoro_1.jpg')
+        
+        while self.ThreadActive:
+            ret, frame = Capture.read()
+            if ret: # If there is no issue with the capture
+                Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
+                width=480
+                height=480
+                sImage=Image[0:width, 0:height]
+                simg=img_fluoro[0:width, 0:height]
+                img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
+                gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
+                FlippedImage = cv2.flip(gray, 1)
+                _, th1=cv2.threshold(FlippedImage, np.mean(FlippedImage)-20, 255, cv2.THRESH_TOZERO)
+                #sum2=cv2.bitwise_and(FlippedImage,FlippedImage,mask=th1)
+                #sum2=cv2.bitwise_not(sum2)
+                #final=cv2.bitwise_and(th1,img_gray_fluoro)
+                final=cv2.addWeighted(th1,0.6,img_gray_fluoro,0.5,0)
+                # Convert to QT format
+                ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8)
+                Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+                self.ImageUpdate.emit(Pic)
+    
+    def stop(self):
+        self.ThreadActive = False
+        self.quit()
 
+class Camera2_Thread(QThread):
+    '''Thread that emits a QT image from camera 2'''
+
+    ImageUpdate2 = pyqtSignal(QImage)
+    
+    def run(self):
+        self.ThreadActive = True
+        Capture = cv2.VideoCapture(3, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
+        
         while self.ThreadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
-                # Convert to QT format
+                
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
-                self.ImageUpdate.emit(Pic)
+                self.ImageUpdate2.emit(Pic)
     
     def stop(self):
         self.ThreadActive = False
