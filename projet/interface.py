@@ -15,6 +15,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+import qdarkstyle ##
 
 # Calculation imports
 import math
@@ -62,12 +63,16 @@ class Controller(QMainWindow):
         self.progress_statusBar.setFixedWidth(250)
 
         self.sig_update_progress.connect(self.progress_statusBar.setValue)
+
         self.sig_update_motor_angle.connect(self.updateAngle)
 
     def startCamera1(self):
         '''Start camera 1'''
-        self.Thread1.start()
-        self.Thread1.ImageUpdate.connect(self.ImageUpdateSlot)
+        try:
+            self.Thread1.start()
+            self.Thread1.ImageUpdate.connect(self.ImageUpdateSlot)
+        except:
+            self.show_error_popup('starting camera 1')
 
     def ImageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
@@ -80,10 +85,12 @@ class Controller(QMainWindow):
         if self.camera1Active:
             self.Thread1.stop()
             self.pushButton_camera1.setText('Activer')
+            self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera1Active = False
         else:
             self.startCamera1()
             self.pushButton_camera1.setText('Pauser')
+            self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
 
     def FocusOnCam3(self):###
@@ -145,6 +152,7 @@ class Camera1_Thread(QThread):
 if __name__ == '__main__':
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
     controller = Controller()
     controller.show()
     sys.exit(app.exec_())
