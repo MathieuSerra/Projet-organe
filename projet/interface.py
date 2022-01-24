@@ -39,6 +39,7 @@ class Controller(QMainWindow):
         # Load user interface
         basepath = os.path.join(os.path.dirname(__file__))
         uic.loadUi(os.path.join(basepath,"interface.ui"), self)
+        self.showMaximized()
 
         # Initialize status variables
         self.camera1Active = True
@@ -46,19 +47,25 @@ class Controller(QMainWindow):
         self.camera3Active = True
 
         # Initiate buttons
-        self.pushButton_camera1.clicked.connect(self.CancelFeed1)
-        self.pushButton_cameraTraitee.clicked.connect(self.CancelFeed1)
-        self.pushButton_camera2.clicked.connect(self.CancelFeed2)
+        self.pushButton_camera1.clicked.connect(self.activateDeactivateCam1)
+        self.pushButton_cameraTraitee.clicked.connect(self.activateDeactivateCam1)
+        self.pushButton_camera2.clicked.connect(self.activateDeactivateCam2)
         self.pushButton_camera3.clicked.connect(self.FocusOnCam3)
 
         self.pushButton_rotateLeft.clicked.connect(self.rotate_left)
         self.pushButton_rotateRight.clicked.connect(self.rotate_right)
+        self.horizontalSlider.valueChanged.connect(self.updateAngle)
+        self.horizontalSlider.setMinimum(-45)
+        self.horizontalSlider.setMaximum(45)
+        self.dial.valueChanged.connect(self.updateAngle2)
+        self.dial.setMinimum(-45)
+        self.dial.setMaximum(45)
 
         # Start camera thread
-        self.Thread1 = Camera1_Thread()
+        self.thread1 = Camera1_Thread(self.label_camera1, self.label_cameraTraitee)
         self.startCamera1()
 
-        self.Thread2 = Camera2_Thread()
+        self.thread2 = Camera2_Thread()
         self.startCamera2()
 
         # Create status bar
@@ -76,37 +83,40 @@ class Controller(QMainWindow):
     def startCamera1(self):
         '''Start camera 1'''
         try:
-            self.Thread1.start()
-            self.Thread1.ImageUpdate.connect(self.ImageUpdateSlot)
-            self.Thread1.ImageUpdateXray.connect(self.ImageUpdateSlotXray)
+            self.thread1.start()
+            self.thread1.imageUpdate.connect(self.imageUpdateSlot)
+            self.thread1.imageUpdateXray.connect(self.imageUpdateSlotXray)
         except:
-            self.show_error_popup('starting camera 1')
+            self.showErrorPopup('starting camera 1')
 
     def startCamera2(self):
         '''Start camera 2'''
         try:
-            self.Thread2.start()
-            self.Thread2.ImageUpdate2.connect(self.ImageUpdateSlot2)
+            self.thread2.start()
+            self.thread2.imageUpdate2.connect(self.imageUpdateSlot2)
         except:
-            self.show_error_popup('starting camera 2')
+            self.showErrorPopup('starting camera 2')
 
-    def ImageUpdateSlot(self, Image):
+    def imageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
         self.label_camera1.setPixmap(QPixmap.fromImage(Image))
+        ##width = self.label_camera1.width()
+        ##height = self.label_camera1.height()
+        ##self.label_camera1.setPixmap(QPixmap.fromImage(Image).scaled(width, height, Qt.KeepAspectRatio))
 
-    def ImageUpdateSlotXray(self, Image):
+    def imageUpdateSlotXray(self, Image):
         '''Update camera 1 image with the Xray images emitted by the thread'''
         self.label_cameraTraitee.setPixmap(QPixmap.fromImage(Image))
 
-    def ImageUpdateSlot2(self, Image):
+    def imageUpdateSlot2(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
         self.label_camera2.setPixmap(QPixmap.fromImage(Image))
 
 
-    def CancelFeed1(self):
+    def activateDeactivateCam1(self):
         '''Stop or activate camera 1 feed'''
         if self.camera1Active:
-            self.Thread1.stop()
+            self.thread1.stop()
             self.pushButton_camera1.setText('Activer')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.pushButton_cameraTraitee.setText('Activer')
@@ -120,10 +130,10 @@ class Controller(QMainWindow):
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
 
-    def CancelFeed2(self):
+    def activateDeactivateCam2(self):
         '''Stop or activate camera 1 feed'''
         if self.camera2Active:
-            self.Thread2.stop()
+            self.thread2.stop()
             self.pushButton_camera2.setText('Activer')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera2Active = False
@@ -137,7 +147,12 @@ class Controller(QMainWindow):
         ''' '''
         self.groupBox_4.setGeometry(100,200,400,500)
     
-    def updateAngle(self, angle=0):
+    def updateAngle(self):
+        angle = self.horizontalSlider.value()
+        self.label_angle.setText('Angle : '+str(angle)+'°')
+
+    def updateAngle2(self):
+        angle = self.dial.value()
         self.label_angle.setText('Angle : '+str(angle)+'°')
 
 
@@ -146,7 +161,7 @@ class Controller(QMainWindow):
 
         self.label_statusBar.setText(text)
 
-    def show_error_popup(self, error=''):
+    def showErrorPopup(self, error=''):
         '''Shows error popup'''
         
         error_popup = QMessageBox()
@@ -157,6 +172,10 @@ class Controller(QMainWindow):
         error_popup.setDefaultButton(QMessageBox.Ok)
         error_popup.exec_()
     
+    def rotateMotor(self):
+        '''Rotates right the motor'''
+        pass
+
     def rotate_left(self):
         '''Rotates left the motor'''
         pass
@@ -165,6 +184,11 @@ class Controller(QMainWindow):
         '''Rotates right the motor'''
         pass
 
+    def resizeEvent(self, event):
+        '''Executes when the main window is resized'''
+        pass
+        #self.label.resize(self.width(), self.height())
+
 #    def closeEvent(self, event):
 #        '''Making sure that everything is closed when the user exits the software.
 #           This function executes automatically when the user closes the UI.
@@ -172,34 +196,44 @@ class Controller(QMainWindow):
 #           if it doesn't follow the naming convention'''
 #
 #        if self.camera1Active:
-#            self.Thread1.stop()
+#            self.thread1.stop()
 #        if self.camera2Active:
-#            self.Thread2.stop()
+#            self.thread2.stop()
 #
 #        print('Window closed')
 
 class Camera1_Thread(QThread):
     '''Thread that emits a QT image from camera 1'''
 
-    ImageUpdate = pyqtSignal(QImage)
-    ImageUpdateXray = pyqtSignal(QImage)
+    imageUpdate = pyqtSignal(QImage)
+    imageUpdateXray = pyqtSignal(QImage)
+
+    def __init__(self, image_label1, image_label2):
+        super().__init__()
+        self.image_label1 = image_label1
+        self.image_label2 = image_label2
     
     def run(self):
-        self.ThreadActive = True
-        VideoDevice1 = 2 ##0 ##À changer selon le device # Webcam
+        self.threadActive = True
+        VideoDevice1 = 0##2 ##0 ##À changer selon le device # Webcam
         Capture = cv2.VideoCapture(VideoDevice1, cv2.CAP_DSHOW)
         #img=cv2.imread('fluoro_1.jpg')
         
-        while self.ThreadActive:
+        while self.threadActive:
+            ##print(self.image_label1.width())
+            ##print(self.image_label1.height())
+            ##
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 # Original camera 1 image
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
                 
-                ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
-                Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
-                self.ImageUpdate.emit(Pic)
+                ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888) #Size: (640, 480) = (4,3)
+                ##Pic = ConvertToQtFormat.scaled(self.image_label1.width(), self.image_label1.height(), Qt.KeepAspectRatio) 
+                #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+                Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
+                self.imageUpdate.emit(Pic)
 
                 # Processed camera 1 image (x ray)
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
@@ -216,25 +250,27 @@ class Camera1_Thread(QThread):
                 #final=cv2.bitwise_and(th1,img_gray_fluoro)
                 final=cv2.addWeighted(th1,0.6,img_gray_fluoro,0.5,0)
                 # Convert to QT format
-                ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8)
-                Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
-                self.ImageUpdateXray.emit(Pic)
+                ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8) #Size: (640, 480)
+                ##Pic = ConvertToQtFormat.scaled(self.image_label2.width(), self.image_label2.height(), Qt.KeepAspectRatio) 
+                #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+                Pic = ConvertToQtFormat.scaled(800, 600, Qt.KeepAspectRatio)
+                self.imageUpdateXray.emit(Pic)
     
     def stop(self):
-        self.ThreadActive = False
+        self.threadActive = False
         self.quit()
 
 class Camera2_Thread(QThread):
     '''Thread that emits a QT image from camera 2'''
 
-    ImageUpdate2 = pyqtSignal(QImage)
+    imageUpdate2 = pyqtSignal(QImage)
     
     def run(self):
-        self.ThreadActive = True
+        self.threadActive = True
         VideoDevice2 = 3
         Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
-        while self.ThreadActive:
+        while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
@@ -242,10 +278,10 @@ class Camera2_Thread(QThread):
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
-                self.ImageUpdate2.emit(Pic)
+                self.imageUpdate2.emit(Pic)
     
     def stop(self):
-        self.ThreadActive = False
+        self.threadActive = False
         self.quit()
 
 # Launch app
