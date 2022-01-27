@@ -10,6 +10,10 @@ import time
 from datetime import datetime
 #from tqdm import tqdm
 
+# Communication with C-ARM
+#import serial
+#ser = serial.Serial('COM3',9600)
+
 # Qt imports
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
@@ -150,6 +154,7 @@ class Controller(QMainWindow):
     def updateAngle(self):
         angle = self.horizontalSlider.value()
         self.label_angle.setText('Angle : '+str(angle)+'°')
+        #ser.write(angle)
 
     def updateAngle2(self):
         angle = self.dial.value()
