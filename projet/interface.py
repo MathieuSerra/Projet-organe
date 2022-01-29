@@ -11,8 +11,8 @@ from datetime import datetime
 #from tqdm import tqdm
 
 # Communication with C-ARM
-#import serial
-#ser = serial.Serial('COM3',9600)
+import serial
+import serial.tools.list_ports
 
 # Qt imports
 from PyQt5 import uic
