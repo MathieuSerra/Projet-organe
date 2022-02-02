@@ -14,6 +14,13 @@ from datetime import datetime
 import serial
 import serial.tools.list_ports
 
+### AUTOMATICALLY FIND ARDUINO PORT ###
+ports = list(serial.tools.list_ports.comports())
+for p in ports:
+    if "Arduino" in p[1]:
+        arduino_port = p[0]
+ser = serial.Serial(arduino_port, 9600)
+
 # Qt imports
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
@@ -39,7 +46,8 @@ class Controller(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        
+        self.current_angle = 0
+        self.steps_per_deg = 1600/360
         # Load user interface
         basepath = os.path.join(os.path.dirname(__file__))
         uic.loadUi(os.path.join(basepath,"interface.ui"), self)
@@ -68,7 +76,9 @@ class Controller(QMainWindow):
 
         self.pushButton_rotateLeft.clicked.connect(self.rotate_left)
         self.pushButton_rotateRight.clicked.connect(self.rotate_right)
+        self.horizontalSlider.setTracking(False)
         self.horizontalSlider.valueChanged.connect(self.updateAngle)
+        self.horizontalSlider.valueChanged.connect(self.turnAngle)
         self.horizontalSlider.setMinimum(-45)
         self.horizontalSlider.setMaximum(45)
 
@@ -92,7 +102,7 @@ class Controller(QMainWindow):
 
         self.sig_update_progress.connect(self.progress_statusBar.setValue)
 
-        self.sig_update_motor_angle.connect(self.updateAngle)
+        #self.sig_update_motor_angle.connect(self.updateAngle)
 
     def startCamera1(self):
         '''Start camera 1'''
@@ -235,7 +245,18 @@ class Controller(QMainWindow):
     def updateAngle(self):
         angle = self.horizontalSlider.value()
         self.label_angle.setText('Angle : '+str(angle)+'°')
-        #ser.write(angle)
+
+    def turnAngle(self):
+        angle = self.horizontalSlider.value()
+        angle = int(angle)
+        if angle != self.current_angle :
+            rotation = angle - self.current_angle
+            rotation = float(rotation)
+            steps = int(np.round(self.steps_per_deg * rotation))
+            steps_byte = bytes(str(steps), 'utf-8')
+            ser.write(steps_byte)
+            self.current_angle = angle
+            print(self.current_angle)
 
 
     def update_status_bar(self, text=''):
