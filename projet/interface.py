@@ -327,11 +327,32 @@ class Camera1_Thread(QThread):
                 img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
                 gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
                 FlippedImage = cv2.flip(gray, 1)
-                _, th1=cv2.threshold(FlippedImage, np.mean(FlippedImage)-20, 255, cv2.THRESH_TOZERO)
-                #sum2=cv2.bitwise_and(FlippedImage,FlippedImage,mask=th1)
-                #sum2=cv2.bitwise_not(sum2)
-                #final=cv2.bitwise_and(th1,img_gray_fluoro)
-                final=cv2.addWeighted(th1,0.6,img_gray_fluoro,0.5,0)
+
+                
+                #nouveau
+                sImage_rgb=cv2.cvtColor(sImage, cv2.COLOR_BGR2RGB)
+                twoDimage=sImage_rgb.reshape((-1,3))
+                twoDimage=np.float32(twoDimage)
+                #Nombre d'iteration 2-3 (pour la rapidité)-perte de précision avec n=2
+                criteria=(cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER,3,1.0)
+                K=3
+                attempts=3
+                ret, label, center=cv2.kmeans(twoDimage,K,None,criteria,attempts,cv2.KMEANS_PP_CENTERS)
+                center=np.uint8(center)
+                res=center[label.flatten()]
+                result_image=res.reshape((sImage_rgb.shape))
+                result_gray=cv2.cvtColor(result_image, cv2.COLOR_RGB2GRAY)
+                ret,th=cv2.threshold(result_gray,100,255,cv2.THRESH_BINARY_INV)
+                ret, result=cv2.threshold(cv2.bitwise_or(gray,th),253,255,cv2.THRESH_TOZERO_INV)
+                final=cv2.addWeighted(result,0.7,img_gray_fluoro,0.3,0.0)
+                final=cv2.flip(final,1)
+
+                # #ancien
+                # _, th1=cv2.threshold(FlippedImage, np.mean(FlippedImage)-20, 255, cv2.THRESH_TOZERO)
+                # #sum2=cv2.bitwise_and(FlippedImage,FlippedImage,mask=th1)
+                # #sum2=cv2.bitwise_not(sum2)
+                # #final=cv2.bitwise_and(th1,img_gray_fluoro)
+                # final=cv2.addWeighted(th1,0.6,img_gray_fluoro,0.5,0)
                 # Convert to QT format
                 ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8) #Size: (640, 480)
                 ##Pic = ConvertToQtFormat.scaled(self.image_label2.width(), self.image_label2.height(), Qt.KeepAspectRatio) 
