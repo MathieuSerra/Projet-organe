@@ -9,17 +9,21 @@ import time
 #qimport h5py
 from datetime import datetime
 #from tqdm import tqdm
+import webbrowser
 
 # Communication with C-ARM
 import serial
 import serial.tools.list_ports
 
 ### AUTOMATICALLY FIND ARDUINO PORT ###
-ports = list(serial.tools.list_ports.comports())
-for p in ports:
-    if "Arduino" in p[1]:
-        arduino_port = p[0]
-ser = serial.Serial(arduino_port, 9600)
+try:
+    ports = list(serial.tools.list_ports.comports())
+    for p in ports:
+        if "Arduino" in p[1]:
+            arduino_port = p[0]
+    ser = serial.Serial(arduino_port, 9600)
+except:
+    print('No Arduino Port')
 
 # Qt imports
 from PyQt5 import uic
@@ -81,6 +85,8 @@ class Controller(QMainWindow):
         self.horizontalSlider.valueChanged.connect(self.turnAngle)
         self.horizontalSlider.setMinimum(-45)
         self.horizontalSlider.setMaximum(45)
+
+        self.pushButton_infos.clicked.connect(self.openHelp)
 
         # Start camera thread
         self.thread1 = Camera1_Thread(self.label_cam1, self.label_cam0)
@@ -172,16 +178,16 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera1Active:
             self.thread1.stop()
-            self.pushButton_camera1.setText('Activer')
+            #self.pushButton_camera1.setText('Activer')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
-            self.pushButton_cameraTraitee.setText('Activer')
+            #self.pushButton_cameraTraitee.setText('Activer')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera1Active = False
         else:
             self.startCamera1()
-            self.pushButton_camera1.setText('Désactiver')
+            #self.pushButton_camera1.setText('Désactiver')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
-            self.pushButton_cameraTraitee.setText('Désactiver')
+            #self.pushButton_cameraTraitee.setText('Désactiver')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
 
@@ -189,12 +195,12 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera2Active:
             self.thread2.stop()
-            self.pushButton_camera2.setText('Activer')
+            #self.pushButton_camera2.setText('Activer')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera2Active = False
         else:
             self.startCamera2()
-            self.pushButton_camera2.setText('Désactiver')
+            #self.pushButton_camera2.setText('Désactiver')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera2Active = True
 
@@ -202,12 +208,12 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera3Active:
             self.thread2.stop()
-            self.pushButton_camera3.setText('Activer')
+            #self.pushButton_camera3.setText('Activer')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera3Active = False
         else:
             self.startCamera2()
-            self.pushButton_camera3.setText('Désactiver')
+            #self.pushButton_camera3.setText('Désactiver')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera3Active = True
 
@@ -256,7 +262,6 @@ class Controller(QMainWindow):
             steps_byte = bytes(str(steps), 'utf-8')
             ser.write(steps_byte)
             self.current_angle = angle
-            print(self.current_angle)
 
 
     def update_status_bar(self, text=''):
@@ -274,18 +279,26 @@ class Controller(QMainWindow):
         error_popup.setStandardButtons(QMessageBox.Ok)
         error_popup.setDefaultButton(QMessageBox.Ok)
         error_popup.exec_()
-    
-    def rotateMotor(self):
-        '''Rotates right the motor'''
-        pass
 
     def rotate_left(self):
         '''Rotates left the motor'''
-        pass
+        rotation = 5 ## 5 degrees
+        rotation = float(rotation)
+        steps = int(np.round(self.steps_per_deg * rotation))
+        steps_byte = bytes(str(steps), 'utf-8')
+        ser.write(steps_byte)
 
     def rotate_right(self):
         '''Rotates right the motor'''
-        pass
+        rotation = -5 ## -5 degrees
+        rotation = float(rotation)
+        steps = int(np.round(self.steps_per_deg * rotation))
+        steps_byte = bytes(str(steps), 'utf-8')
+        ser.write(steps_byte)
+
+    def openHelp(self):
+        '''Open help documentation for the program (PDF)'''
+        webbrowser.open_new(r'file://Guide.pdf') ##
 
 #    def resizeEvent(self, event):
 #        '''Executes when the main window is resized'''
