@@ -98,6 +98,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_zoom1">
+            <property name="toolTip">
+             <string>Agrandir</string>
+            </property>
             <property name="statusTip">
              <string>Agrandir</string>
             </property>
@@ -121,6 +124,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_camera1">
+            <property name="toolTip">
+             <string>Désactiver</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -223,6 +229,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_zoom2">
+            <property name="toolTip">
+             <string>Agrandir</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -240,6 +249,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_camera2">
+            <property name="toolTip">
+             <string>Désactiver</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -342,6 +354,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_zoom3">
+            <property name="toolTip">
+             <string>Agrandir</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -359,6 +374,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_camera3">
+            <property name="toolTip">
+             <string>Désactiver</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -471,6 +489,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_cameraTraitee">
+            <property name="toolTip">
+             <string>Désactiver</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -636,6 +657,9 @@
                    <height>30</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Changer l'angle</string>
+                 </property>
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
                  </property>
@@ -680,6 +704,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButton_infos">
+          <property name="toolTip">
+           <string>Aide</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -697,6 +724,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButton_settings">
+          <property name="toolTip">
+           <string>Paramètres</string>
+          </property>
           <property name="text">
            <string/>
           </property>

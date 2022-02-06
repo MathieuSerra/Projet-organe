@@ -50,8 +50,14 @@ class Controller(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
+
         self.current_angle = 0
         self.steps_per_deg = 1600/360
+        self.angleIncrement = 5
+
+        #Instantiating the settings and properties windows
+        self.settingsDialog = Settings_Dialog()
+
         # Load user interface
         basepath = os.path.join(os.path.dirname(__file__))
         uic.loadUi(os.path.join(basepath,"interface.ui"), self)
@@ -87,9 +93,15 @@ class Controller(QMainWindow):
         self.horizontalSlider.setMaximum(45)
 
         self.pushButton_infos.clicked.connect(self.openHelp)
+        self.pushButton_settings.clicked.connect(self.openSettingsDialog)
+
+        #Connect settings options
+        self.settingsDialog.buttonBox.accepted.connect(self.changeSettings)
+        self.settingsDialog.buttonBox.rejected.connect(self.cancelSettings)
+        self.updateAngleToolTip()
 
         # Start camera thread
-        self.thread1 = Camera1_Thread(self.label_cam1, self.label_cam0)
+        self.thread1 = Camera1_Thread()
         self.startCamera1()
 
         self.thread2 = Camera2_Thread()
@@ -179,15 +191,19 @@ class Controller(QMainWindow):
         if self.camera1Active:
             self.thread1.stop()
             #self.pushButton_camera1.setText('Activer')
+            self.pushButton_camera1.setToolTip('Activer')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             #self.pushButton_cameraTraitee.setText('Activer')
+            self.pushButton_cameraTraitee.setToolTip('Activer')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera1Active = False
         else:
             self.startCamera1()
             #self.pushButton_camera1.setText('Désactiver')
+            self.pushButton_camera1.setToolTip('Désactiver')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             #self.pushButton_cameraTraitee.setText('Désactiver')
+            self.pushButton_cameraTraitee.setToolTip('Désactiver')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
 
@@ -196,11 +212,13 @@ class Controller(QMainWindow):
         if self.camera2Active:
             self.thread2.stop()
             #self.pushButton_camera2.setText('Activer')
+            self.pushButton_camera2.setToolTip('Activer')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera2Active = False
         else:
             self.startCamera2()
             #self.pushButton_camera2.setText('Désactiver')
+            self.pushButton_camera2.setToolTip('Désactiver')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera2Active = True
 
@@ -209,11 +227,13 @@ class Controller(QMainWindow):
         if self.camera3Active:
             self.thread2.stop()
             #self.pushButton_camera3.setText('Activer')
+            self.pushButton_camera3.setToolTip('Activer')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera3Active = False
         else:
             self.startCamera2()
             #self.pushButton_camera3.setText('Désactiver')
+            self.pushButton_camera3.setToolTip('Désactiver')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera3Active = True
 
@@ -253,15 +273,18 @@ class Controller(QMainWindow):
         self.label_angle.setText('Angle : '+str(angle)+'°')
 
     def turnAngle(self):
-        angle = self.horizontalSlider.value()
-        angle = int(angle)
-        if angle != self.current_angle :
-            rotation = angle - self.current_angle
-            rotation = float(rotation)
-            steps = int(np.round(self.steps_per_deg * rotation))
-            steps_byte = bytes(str(steps), 'utf-8')
-            ser.write(steps_byte)
-            self.current_angle = angle
+        try:
+            angle = self.horizontalSlider.value()
+            angle = int(angle)
+            if angle != self.current_angle :
+                rotation = angle - self.current_angle
+                rotation = float(rotation)
+                steps = int(np.round(self.steps_per_deg * rotation))
+                steps_byte = bytes(str(steps), 'utf-8')
+                ser.write(steps_byte)
+                self.current_angle = angle
+        except:
+            self.showErrorPopup('moving motor')
 
 
     def update_status_bar(self, text=''):
@@ -282,23 +305,64 @@ class Controller(QMainWindow):
 
     def rotate_left(self):
         '''Rotates left the motor'''
-        rotation = 5 ## 5 degrees
-        rotation = float(rotation)
-        steps = int(np.round(self.steps_per_deg * rotation))
-        steps_byte = bytes(str(steps), 'utf-8')
-        ser.write(steps_byte)
+        rotation = float(self.angleIncrement) * -1 ####
+
+        newAngle = self.horizontalSlider.value() + int(rotation)
+        if newAngle >= -45:
+            self.horizontalSlider.setValue(newAngle)
+            self.updateAngle()
+
+            try:
+                steps = int(np.round(self.steps_per_deg * rotation))
+                steps_byte = bytes(str(steps), 'utf-8')
+                ser.write(steps_byte)
+            except:
+                self.showErrorPopup('rotating left the motor')
+        else:
+            self.showErrorPopup('rotating, angle exceeds the range of rotation')
+
 
     def rotate_right(self):
         '''Rotates right the motor'''
-        rotation = -5 ## -5 degrees
-        rotation = float(rotation)
-        steps = int(np.round(self.steps_per_deg * rotation))
-        steps_byte = bytes(str(steps), 'utf-8')
-        ser.write(steps_byte)
+        rotation = float(self.angleIncrement)
+
+        newAngle = self.horizontalSlider.value() + int(rotation)
+        if newAngle <= 45:
+            self.horizontalSlider.setValue(newAngle)
+            self.updateAngle()
+
+            try:
+                steps = int(np.round(self.steps_per_deg * rotation))
+                steps_byte = bytes(str(steps), 'utf-8')
+                ser.write(steps_byte)
+            except:
+                self.showErrorPopup('rotating right the motor')
+        else:
+            self.showErrorPopup('rotating, angle exceeds the range of rotation')
 
     def openHelp(self):
         '''Open help documentation for the program (PDF)'''
-        webbrowser.open_new(r'file://Guide.pdf') ##
+        webbrowser.open_new('Guide.pdf') ##
+
+    def openSettingsDialog(self):
+        '''Open the dialog window for modification of settings'''
+        self.settingsDialog.exec_()
+
+    def changeSettings(self):
+        '''Change the configuration settings'''
+        self.angleIncrement = int(self.settingsDialog.doubleSpinBox_motorIncrement.value())
+        self.updateAngleToolTip()
+        self.settingsDialog.accept()
+
+    def cancelSettings(self):
+        '''Change the configuration settings'''
+        self.settingsDialog.doubleSpinBox_motorIncrement.setValue(self.angleIncrement)
+        self.settingsDialog.accept()
+
+
+    def updateAngleToolTip(self):
+        self.pushButton_rotateLeft.setToolTip('Tourner de -' + str(self.angleIncrement) + '° (sens anti-horaire)')
+        self.pushButton_rotateRight.setToolTip('Tourner de ' + str(self.angleIncrement) + '° (sens horaire)')
 
 #    def resizeEvent(self, event):
 #        '''Executes when the main window is resized'''
@@ -318,16 +382,28 @@ class Controller(QMainWindow):
 #
 #        print('Window closed')
 
+class Settings_Dialog(QDialog):
+    '''Class for Settings Dialog'''
+    
+    def __init__(self):
+        QDialog.__init__(self)
+        
+        #Loading user interface
+        basepath = os.path.join(os.path.dirname(__file__))
+        uic.loadUi(os.path.join(basepath,"settings.ui"), self)
+        
+        #Loading preset
+        self.loadPreset()
+
+    def loadPreset(self):
+        '''Load preset'''
+        self.doubleSpinBox_motorIncrement.setValue(5)
+
 class Camera1_Thread(QThread):
     '''Thread that emits a QT image from camera 1'''
 
     imageUpdate = pyqtSignal(QImage)
     imageUpdateXray = pyqtSignal(QImage)
-
-    def __init__(self, image_label1, image_label2):
-        super().__init__()
-        self.image_label1 = image_label1
-        self.image_label2 = image_label2
     
     def run(self):
         self.threadActive = True
