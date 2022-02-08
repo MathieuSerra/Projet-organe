@@ -9,10 +9,21 @@ import time
 #qimport h5py
 from datetime import datetime
 #from tqdm import tqdm
+import webbrowser
 
 # Communication with C-ARM
 import serial
 import serial.tools.list_ports
+
+### AUTOMATICALLY FIND ARDUINO PORT ###
+try:
+    ports = list(serial.tools.list_ports.comports())
+    for p in ports:
+        if "Arduino" in p[1]:
+            arduino_port = p[0]
+    ser = serial.Serial(arduino_port, 9600)
+except:
+    print('No Arduino Port')
 
 # Qt imports
 from PyQt5 import uic
@@ -39,7 +50,15 @@ class Controller(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        
+
+        self.current_angle = 0
+        self.steps_per_deg = 1600/360
+        self.angleIncrement = 5
+        self.showFps = False
+
+        #Instantiating the settings and properties windows
+        self.settingsDialog = Settings_Dialog()
+
         # Load user interface
         basepath = os.path.join(os.path.dirname(__file__))
         uic.loadUi(os.path.join(basepath,"interface.ui"), self)
@@ -68,12 +87,22 @@ class Controller(QMainWindow):
 
         self.pushButton_rotateLeft.clicked.connect(self.rotate_left)
         self.pushButton_rotateRight.clicked.connect(self.rotate_right)
+        self.horizontalSlider.setTracking(False)
         self.horizontalSlider.valueChanged.connect(self.updateAngle)
+        self.horizontalSlider.valueChanged.connect(self.turnAngle)
         self.horizontalSlider.setMinimum(-45)
         self.horizontalSlider.setMaximum(45)
 
+        self.pushButton_infos.clicked.connect(self.openHelp)
+        self.pushButton_settings.clicked.connect(self.openSettingsDialog)
+
+        #Connect settings options
+        self.settingsDialog.buttonBox.accepted.connect(self.changeSettings)
+        self.settingsDialog.buttonBox.rejected.connect(self.cancelSettings)
+        self.updateAngleToolTip()
+
         # Start camera thread
-        self.thread1 = Camera1_Thread(self.label_cam1, self.label_cam0)
+        self.thread1 = Camera1_Thread()
         self.startCamera1()
 
         self.thread2 = Camera2_Thread()
@@ -92,7 +121,7 @@ class Controller(QMainWindow):
 
         self.sig_update_progress.connect(self.progress_statusBar.setValue)
 
-        self.sig_update_motor_angle.connect(self.updateAngle)
+        #self.sig_update_motor_angle.connect(self.updateAngle)
 
     def startCamera1(self):
         '''Start camera 1'''
@@ -162,16 +191,20 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera1Active:
             self.thread1.stop()
-            self.pushButton_camera1.setText('Activer')
+            #self.pushButton_camera1.setText('Activer')
+            self.pushButton_camera1.setToolTip('Activer')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
-            self.pushButton_cameraTraitee.setText('Activer')
+            #self.pushButton_cameraTraitee.setText('Activer')
+            self.pushButton_cameraTraitee.setToolTip('Activer')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera1Active = False
         else:
             self.startCamera1()
-            self.pushButton_camera1.setText('Désactiver')
+            #self.pushButton_camera1.setText('Désactiver')
+            self.pushButton_camera1.setToolTip('Désactiver')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
-            self.pushButton_cameraTraitee.setText('Désactiver')
+            #self.pushButton_cameraTraitee.setText('Désactiver')
+            self.pushButton_cameraTraitee.setToolTip('Désactiver')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
 
@@ -179,12 +212,14 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera2Active:
             self.thread2.stop()
-            self.pushButton_camera2.setText('Activer')
+            #self.pushButton_camera2.setText('Activer')
+            self.pushButton_camera2.setToolTip('Activer')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera2Active = False
         else:
             self.startCamera2()
-            self.pushButton_camera2.setText('Désactiver')
+            #self.pushButton_camera2.setText('Désactiver')
+            self.pushButton_camera2.setToolTip('Désactiver')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera2Active = True
 
@@ -192,12 +227,14 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera3Active:
             self.thread2.stop()
-            self.pushButton_camera3.setText('Activer')
+            #self.pushButton_camera3.setText('Activer')
+            self.pushButton_camera3.setToolTip('Activer')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera3Active = False
         else:
             self.startCamera2()
-            self.pushButton_camera3.setText('Désactiver')
+            #self.pushButton_camera3.setText('Désactiver')
+            self.pushButton_camera3.setToolTip('Désactiver')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera3Active = True
 
@@ -235,7 +272,20 @@ class Controller(QMainWindow):
     def updateAngle(self):
         angle = self.horizontalSlider.value()
         self.label_angle.setText('Angle : '+str(angle)+'°')
-        #ser.write(angle)
+
+    def turnAngle(self):
+        try:
+            angle = self.horizontalSlider.value()
+            angle = int(angle)
+            if angle != self.current_angle :
+                rotation = angle - self.current_angle
+                rotation = float(rotation)
+                steps = int(np.round(self.steps_per_deg * rotation))
+                steps_byte = bytes(str(steps), 'utf-8')
+                ser.write(steps_byte)
+                self.current_angle = angle
+        except:
+            self.showErrorPopup('moving motor')
 
 
     def update_status_bar(self, text=''):
@@ -253,47 +303,107 @@ class Controller(QMainWindow):
         error_popup.setStandardButtons(QMessageBox.Ok)
         error_popup.setDefaultButton(QMessageBox.Ok)
         error_popup.exec_()
-    
-    def rotateMotor(self):
-        '''Rotates right the motor'''
-        pass
 
     def rotate_left(self):
         '''Rotates left the motor'''
-        pass
+        rotation = float(self.angleIncrement) * -1 ####
+
+        newAngle = self.horizontalSlider.value() + int(rotation)
+        if newAngle >= -45:
+            self.horizontalSlider.setValue(newAngle)
+            self.updateAngle()
+
+            try:
+                steps = int(np.round(self.steps_per_deg * rotation))
+                steps_byte = bytes(str(steps), 'utf-8')
+                ser.write(steps_byte)
+            except:
+                self.showErrorPopup('rotating left the motor')
+        else:
+            self.showErrorPopup('rotating, angle exceeds the range of rotation')
+
 
     def rotate_right(self):
         '''Rotates right the motor'''
-        pass
+        rotation = float(self.angleIncrement)
+
+        newAngle = self.horizontalSlider.value() + int(rotation)
+        if newAngle <= 45:
+            self.horizontalSlider.setValue(newAngle)
+            self.updateAngle()
+
+            try:
+                steps = int(np.round(self.steps_per_deg * rotation))
+                steps_byte = bytes(str(steps), 'utf-8')
+                ser.write(steps_byte)
+            except:
+                self.showErrorPopup('rotating right the motor')
+        else:
+            self.showErrorPopup('rotating, angle exceeds the range of rotation')
+
+    def openHelp(self):
+        '''Open help documentation for the program (PDF)'''
+        webbrowser.open_new('Guide.pdf') ##
+
+    def openSettingsDialog(self):
+        '''Open the dialog window for modification of settings'''
+        self.settingsDialog.exec_()
+
+    def changeSettings(self):
+        '''Change the configuration settings'''
+        self.angleIncrement = int(self.settingsDialog.doubleSpinBox_motorIncrement.value())
+        self.updateAngleToolTip()
+        self.showFps = self.settingsDialog.checkBox_fps.isChecked()
+        self.settingsDialog.accept()
+
+    def cancelSettings(self):
+        '''Change the configuration settings'''
+        self.settingsDialog.doubleSpinBox_motorIncrement.setValue(self.angleIncrement)
+        self.settingsDialog.checkBox_fps.setChecked(self.showFps)
+        self.settingsDialog.accept()
+
+
+    def updateAngleToolTip(self):
+        self.pushButton_rotateLeft.setToolTip('Tourner de -' + str(self.angleIncrement) + '° (sens anti-horaire)')
+        self.pushButton_rotateRight.setToolTip('Tourner de ' + str(self.angleIncrement) + '° (sens horaire)')
 
 #    def resizeEvent(self, event):
 #        '''Executes when the main window is resized'''
 #        pass
         #self.label.resize(self.width(), self.height())
 
-#    def closeEvent(self, event):
-#        '''Making sure that everything is closed when the user exits the software.
-#           This function executes automatically when the user closes the UI.
-#           This is an intrinsic function name of Qt, don't change the name even 
-#           if it doesn't follow the naming convention'''
-#
-#        if self.camera1Active:
-#            self.thread1.stop()
-#        if self.camera2Active:
-#            self.thread2.stop()
-#
-#        print('Window closed')
+    def closeEvent(self, event):
+        '''Making sure that everything is closed when the user exits the software.
+           This function executes automatically when the user closes the UI.
+           This is an intrinsic function name of Qt, don't change the name even 
+           if it doesn't follow the naming convention'''
+
+        self.activateDeactivateCam1()
+        self.activateDeactivateCam2()
+        self.activateDeactivateCam3()
+
+class Settings_Dialog(QDialog):
+    '''Class for Settings Dialog'''
+    
+    def __init__(self):
+        QDialog.__init__(self)
+        
+        #Loading user interface
+        basepath = os.path.join(os.path.dirname(__file__))
+        uic.loadUi(os.path.join(basepath,"settings.ui"), self)
+        
+        #Loading preset
+        self.loadPreset()
+
+    def loadPreset(self):
+        '''Load preset'''
+        self.doubleSpinBox_motorIncrement.setValue(5)
 
 class Camera1_Thread(QThread):
     '''Thread that emits a QT image from camera 1'''
 
     imageUpdate = pyqtSignal(QImage)
     imageUpdateXray = pyqtSignal(QImage)
-
-    def __init__(self, image_label1, image_label2):
-        super().__init__()
-        self.image_label1 = image_label1
-        self.image_label2 = image_label2
     
     def run(self):
         self.threadActive = True
@@ -301,15 +411,28 @@ class Camera1_Thread(QThread):
         Capture = cv2.VideoCapture(VideoDevice1, cv2.CAP_DSHOW)
         #img=cv2.imread('fluoro_1.jpg')
         
+        prev_frame_time = 0
+        new_frame_time = 0
+
         while self.threadActive:
             ##print(self.image_label1.width())
             ##print(self.image_label1.height())
             ##
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
+                #start_time = time.time() # start time of the loop
+
                 # Original camera 1 image
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
+
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
+
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888) #Size: (640, 480) = (4,3)
                 ##Pic = ConvertToQtFormat.scaled(self.image_label1.width(), self.image_label1.height(), Qt.KeepAspectRatio) 
@@ -317,6 +440,11 @@ class Camera1_Thread(QThread):
                 ##Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 self.imageUpdate.emit(Pic)
+
+                #fps = int(1 / (time.time() - start_time)) # FPS = 1 / time to process loop
+                #print("FPS: ", fps)
+
+                ####
 
                 # Processed camera 1 image (x ray)
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
@@ -360,6 +488,8 @@ class Camera1_Thread(QThread):
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 #Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 self.imageUpdateXray.emit(Pic)
+
+                #print("FPS: ", int(1 / (time.time() - start_time))) # FPS = 1 / time to process loop
     
     def stop(self):
         self.threadActive = False
@@ -375,11 +505,22 @@ class Camera2_Thread(QThread):
         VideoDevice2 = 3
         Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
+        prev_frame_time = 0
+        new_frame_time = 0
+
         while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
+
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
+
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
@@ -400,11 +541,22 @@ class Camera3_Thread(QThread):
         VideoDevice2 = 4
         Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
+        prev_frame_time = 0
+        new_frame_time = 0
+
         while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
+
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
+                
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
@@ -420,6 +572,14 @@ if __name__ == '__main__':
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
+    #app.setStyleSheet("QMainWindow { background-color: #1A72BB }")
+    #app.setStyleSheet("QPushButton { background-color: #26486B }")
+        #"color: red;"
+         #                   "background-color: #7FFFD4;"
+          #                   "border-style: solid;"
+           #                  "border-width: 2px;"
+            #                 "border-color: #FA8072;"
+             #                "border-radius: 3px")
     controller = Controller()
     controller.show()
     sys.exit(app.exec_())

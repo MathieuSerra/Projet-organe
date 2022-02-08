@@ -17,18 +17,26 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Organe-X</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout" stretch="3">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,0">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
          <widget class="QGroupBox" name="groupBox_frame1">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="title">
-           <string>Caméra principale (non traitée)</string>
+           <string>Caméra principale non traitée</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
@@ -90,32 +98,77 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_zoom1">
-            <property name="text">
+            <property name="toolTip">
              <string>Agrandir</string>
+            </property>
+            <property name="statusTip">
+             <string>Agrandir</string>
+            </property>
+            <property name="whatsThis">
+             <string/>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-expand-white.png</normaloff>icones/icon-expand-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_camera1">
-            <property name="text">
+            <property name="toolTip">
              <string>Désactiver</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-pause-white.png</normaloff>icones/icon-pause-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_17">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_frame2">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="title">
            <string>Caméra secondaire gauche</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_6">
            <item>
@@ -133,6 +186,11 @@
            </item>
            <item>
             <widget class="QLabel" name="label_cam2">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
              <property name="text">
               <string>Caméra non activée</string>
              </property>
@@ -171,32 +229,71 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_zoom2">
-            <property name="text">
+            <property name="toolTip">
              <string>Agrandir</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-expand-white.png</normaloff>icones/icon-expand-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_camera2">
-            <property name="text">
+            <property name="toolTip">
              <string>Désactiver</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-pause-white.png</normaloff>icones/icon-pause-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_18">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_frame3">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="title">
            <string>Caméra secondaire droite</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_7">
            <item>
@@ -214,6 +311,11 @@
            </item>
            <item>
             <widget class="QLabel" name="label_cam3">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
              <property name="text">
               <string>Caméra non activée</string>
              </property>
@@ -252,25 +354,56 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_zoom3">
-            <property name="text">
+            <property name="toolTip">
              <string>Agrandir</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-expand-white.png</normaloff>icones/icon-expand-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_camera3">
-            <property name="text">
+            <property name="toolTip">
              <string>Désactiver</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-pause-white.png</normaloff>icones/icon-pause-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_19">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
@@ -280,8 +413,16 @@
        <layout class="QVBoxLayout" name="verticalLayout_4" stretch="1,0,0">
         <item>
          <widget class="QGroupBox" name="groupBox_frame0">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
           <property name="title">
-           <string>Caméra principale (traitée)</string>
+           <string>Caméra principale traitée</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
@@ -299,6 +440,17 @@
            </item>
            <item>
             <widget class="QLabel" name="label_cam0">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="statusTip">
+              <string/>
+             </property>
              <property name="text">
               <string>Caméra non activée</string>
              </property>
@@ -337,14 +489,36 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_cameraTraitee">
-            <property name="text">
+            <property name="toolTip">
              <string>Désactiver</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
             <property name="icon">
              <iconset>
               <normaloff>icones/icon-pause-white.png</normaloff>icones/icon-pause-white.png</iconset>
             </property>
+            <property name="iconSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_20">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
@@ -352,8 +526,21 @@
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <widget class="QGroupBox" name="groupBox_5">
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+              <weight>50</weight>
+              <italic>false</italic>
+              <bold>false</bold>
+              <underline>false</underline>
+              <strikeout>false</strikeout>
+             </font>
+            </property>
             <property name="title">
              <string>Contrôle du bras motorisé</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_2">
              <item>
@@ -373,17 +560,40 @@
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_rotateLeft">
-                 <property name="text">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
                   <string>Tourner en sens anti-horaire</string>
+                 </property>
+                 <property name="text">
+                  <string/>
                  </property>
                  <property name="icon">
                   <iconset>
                    <normaloff>icones/icon-rotate-left-white.png</normaloff>icones/icon-rotate-left-white.png</iconset>
                  </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>22</width>
+                   <height>22</height>
+                  </size>
+                 </property>
                 </widget>
                </item>
                <item>
                 <widget class="QLabel" name="label_angle">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
                  <property name="text">
                   <string>Angle : 0°</string>
                  </property>
@@ -391,12 +601,21 @@
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_rotateRight">
-                 <property name="text">
+                 <property name="toolTip">
                   <string>Tourner en sens horaire</string>
+                 </property>
+                 <property name="text">
+                  <string/>
                  </property>
                  <property name="icon">
                   <iconset>
                    <normaloff>icones/icon-rotate-right-white.png</normaloff>icones/icon-rotate-right-white.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>22</width>
+                   <height>22</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -416,16 +635,125 @@
               </layout>
              </item>
              <item>
-              <widget class="QSlider" name="horizontalSlider">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
+              <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="5,8,5">
+               <item>
+                <spacer name="horizontalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QSlider" name="horizontalSlider">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>30</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Changer l'angle</string>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </item>
             </layout>
            </widget>
           </item>
          </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_infos">
+          <property name="toolTip">
+           <string>Aide</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icones/icons-info-white.png</normaloff>icones/icons-info-white.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_settings">
+          <property name="toolTip">
+           <string>Paramètres</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icones/icons-settings-white.png</normaloff>icones/icons-settings-white.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
