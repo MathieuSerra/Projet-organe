@@ -54,6 +54,7 @@ class Controller(QMainWindow):
         self.current_angle = 0
         self.steps_per_deg = 1600/360
         self.angleIncrement = 5
+        self.showFps = False
 
         #Instantiating the settings and properties windows
         self.settingsDialog = Settings_Dialog()
@@ -352,11 +353,13 @@ class Controller(QMainWindow):
         '''Change the configuration settings'''
         self.angleIncrement = int(self.settingsDialog.doubleSpinBox_motorIncrement.value())
         self.updateAngleToolTip()
+        self.showFps = self.settingsDialog.checkBox_fps.isChecked()
         self.settingsDialog.accept()
 
     def cancelSettings(self):
         '''Change the configuration settings'''
         self.settingsDialog.doubleSpinBox_motorIncrement.setValue(self.angleIncrement)
+        self.settingsDialog.checkBox_fps.setChecked(self.showFps)
         self.settingsDialog.accept()
 
 
@@ -369,18 +372,15 @@ class Controller(QMainWindow):
 #        pass
         #self.label.resize(self.width(), self.height())
 
-#    def closeEvent(self, event):
-#        '''Making sure that everything is closed when the user exits the software.
-#           This function executes automatically when the user closes the UI.
-#           This is an intrinsic function name of Qt, don't change the name even 
-#           if it doesn't follow the naming convention'''
-#
-#        if self.camera1Active:
-#            self.thread1.stop()
-#        if self.camera2Active:
-#            self.thread2.stop()
-#
-#        print('Window closed')
+    def closeEvent(self, event):
+        '''Making sure that everything is closed when the user exits the software.
+           This function executes automatically when the user closes the UI.
+           This is an intrinsic function name of Qt, don't change the name even 
+           if it doesn't follow the naming convention'''
+
+        self.activateDeactivateCam1()
+        self.activateDeactivateCam2()
+        self.activateDeactivateCam3()
 
 class Settings_Dialog(QDialog):
     '''Class for Settings Dialog'''
@@ -411,15 +411,28 @@ class Camera1_Thread(QThread):
         Capture = cv2.VideoCapture(VideoDevice1, cv2.CAP_DSHOW)
         #img=cv2.imread('fluoro_1.jpg')
         
+        prev_frame_time = 0
+        new_frame_time = 0
+
         while self.threadActive:
             ##print(self.image_label1.width())
             ##print(self.image_label1.height())
             ##
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
+                #start_time = time.time() # start time of the loop
+
                 # Original camera 1 image
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
+
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
+
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888) #Size: (640, 480) = (4,3)
                 ##Pic = ConvertToQtFormat.scaled(self.image_label1.width(), self.image_label1.height(), Qt.KeepAspectRatio) 
@@ -427,6 +440,11 @@ class Camera1_Thread(QThread):
                 ##Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 self.imageUpdate.emit(Pic)
+
+                #fps = int(1 / (time.time() - start_time)) # FPS = 1 / time to process loop
+                #print("FPS: ", fps)
+
+                ####
 
                 # Processed camera 1 image (x ray)
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
@@ -470,6 +488,8 @@ class Camera1_Thread(QThread):
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 #Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 self.imageUpdateXray.emit(Pic)
+
+                #print("FPS: ", int(1 / (time.time() - start_time))) # FPS = 1 / time to process loop
     
     def stop(self):
         self.threadActive = False
@@ -485,11 +505,22 @@ class Camera2_Thread(QThread):
         VideoDevice2 = 3
         Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
+        prev_frame_time = 0
+        new_frame_time = 0
+
         while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
+
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
+
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
@@ -510,11 +541,22 @@ class Camera3_Thread(QThread):
         VideoDevice2 = 4
         Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
+        prev_frame_time = 0
+        new_frame_time = 0
+
         while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
+
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
+                
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
@@ -530,6 +572,14 @@ if __name__ == '__main__':
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
+    #app.setStyleSheet("QMainWindow { background-color: #1A72BB }")
+    #app.setStyleSheet("QPushButton { background-color: #26486B }")
+        #"color: red;"
+         #                   "background-color: #7FFFD4;"
+          #                   "border-style: solid;"
+           #                  "border-width: 2px;"
+            #                 "border-color: #FA8072;"
+             #                "border-radius: 3px")
     controller = Controller()
     controller.show()
     sys.exit(app.exec_())

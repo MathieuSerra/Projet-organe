@@ -446,7 +446,7 @@
               </font>
              </property>
              <property name="toolTip">
-              <string>Agrandir</string>
+              <string/>
              </property>
              <property name="statusTip">
               <string/>
