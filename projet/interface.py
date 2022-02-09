@@ -413,6 +413,7 @@ class Camera1_Thread(QThread):
         
         prev_frame_time = 0
         new_frame_time = 0
+        start_time = 0
 
         while self.threadActive:
             ##print(self.image_label1.width())
@@ -421,18 +422,19 @@ class Camera1_Thread(QThread):
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 #start_time = time.time() # start time of the loop
+                new_frame_time = time.time()
+                fps = int(1 / (new_frame_time - prev_frame_time))
+                prev_frame_time = new_frame_time
 
                 # Original camera 1 image
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
 
-                new_frame_time = time.time()
-                fps = int(1/(new_frame_time-prev_frame_time))
-                prev_frame_time = new_frame_time
+                fps_rawCam = int(1 / (time.time() - start_time)) # FPS = 1 / time to process loop
 
                 if controller.showFps == True:
-                    fpsText = "FPS: " + str(fps)
-                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
+                    fpsText = "FPS: " + str(fps_rawCam)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888) #Size: (640, 480) = (4,3)
                 ##Pic = ConvertToQtFormat.scaled(self.image_label1.width(), self.image_label1.height(), Qt.KeepAspectRatio) 
@@ -482,12 +484,19 @@ class Camera1_Thread(QThread):
                 # #final=cv2.bitwise_and(th1,img_gray_fluoro)
                 # final=cv2.addWeighted(th1,0.6,img_gray_fluoro,0.5,0)
                 # Convert to QT format
+
+                if controller.showFps == True:
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(final, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
+                
                 ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8) #Size: (640, 480)
                 ##Pic = ConvertToQtFormat.scaled(self.image_label2.width(), self.image_label2.height(), Qt.KeepAspectRatio) 
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 #Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 self.imageUpdateXray.emit(Pic)
+
+                start_time = time.time()
 
                 #print("FPS: ", int(1 / (time.time() - start_time))) # FPS = 1 / time to process loop
     
@@ -520,7 +529,7 @@ class Camera2_Thread(QThread):
 
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
-                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
@@ -556,7 +565,7 @@ class Camera3_Thread(QThread):
                 
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
-                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
                 #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
@@ -571,7 +580,30 @@ class Camera3_Thread(QThread):
 if __name__ == '__main__':
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
+    #app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
+
+    from qt_material import apply_stylesheet
+    apply_stylesheet(app, theme='my_theme.xml')
+
+    #app.setStyle("Fusion")
+
+    #dark_palette = QPalette()
+    #dark_palette.setColor(QPalette.Window, QColor('#346792'))
+    #dark_palette.setColor(QPalette.WindowText, Qt.white)
+    #dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
+    #dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+    #dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
+    #dark_palette.setColor(QPalette.ToolTipText, Qt.white)
+    #dark_palette.setColor(QPalette.Text, Qt.white)
+    #dark_palette.setColor(QPalette.Button, QColor('#26486B'))
+    #dark_palette.setColor(QPalette.ButtonText, Qt.white)
+    #dark_palette.setColor(QPalette.BrightText, Qt.red)
+    #dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    #dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    #dark_palette.setColor(QPalette.HighlightedText, Qt.black)
+
+    #app.setPalette(dark_palette)
+
     #app.setStyleSheet("QMainWindow { background-color: #1A72BB }")
     #app.setStyleSheet("QPushButton { background-color: #26486B }")
         #"color: red;"
