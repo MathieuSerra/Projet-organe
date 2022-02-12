@@ -419,22 +419,25 @@ class Camera1_Thread(QThread):
             ##print(self.image_label1.width())
             ##print(self.image_label1.height())
             ##
+            simg=img_fluoro[0:512,0:350]
+            simg=cv2.resize(simg,(320,240),interpolation=cv2.INTER_AREA)
+            img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
+            
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
                 #start_time = time.time() # start time of the loop
-                new_frame_time = time.time()
-                fps = int(1 / (new_frame_time - prev_frame_time))
-                prev_frame_time = new_frame_time
 
                 # Original camera 1 image
-                Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
-                FlippedImage = cv2.flip(Image, 1)
+                
+                FlippedImage = cv2.flip(frame, 1)
 
-                fps_rawCam = int(1 / (time.time() - start_time)) # FPS = 1 / time to process loop
+                new_frame_time = time.time()
+                fps = int(1/(new_frame_time-prev_frame_time))
+                prev_frame_time = new_frame_time
 
                 if controller.showFps == True:
-                    fpsText = "FPS: " + str(fps_rawCam)
-                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
+                    fpsText = "FPS: " + str(fps)
+                    cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888) #Size: (640, 480) = (4,3)
                 ##Pic = ConvertToQtFormat.scaled(self.image_label1.width(), self.image_label1.height(), Qt.KeepAspectRatio) 
@@ -449,19 +452,15 @@ class Camera1_Thread(QThread):
                 ####
 
                 # Processed camera 1 image (x ray)
-                Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
-                width=480
-                height=480
-                sImage=Image[0:width, 0:height]
-                simg=img_fluoro[0:width, 0:height]
-                img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
+                #sImage=Image[0:480, 0:640]
+                sImage=cv2.pyrDown(frame)
                 gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
-                FlippedImage = cv2.flip(gray, 1)
+                #FlippedImage = cv2.flip(gray, 1)
 
                 
                 #nouveau
-                sImage_rgb=cv2.cvtColor(sImage, cv2.COLOR_BGR2RGB)
-                twoDimage=sImage_rgb.reshape((-1,3))
+                #test=cv2.cvtColor(sImage, cv2.COLOR_BGR2RGB)
+                twoDimage=sImage[:,:,0].reshape((-1,1))
                 twoDimage=np.float32(twoDimage)
                 #Nombre d'iteration 2-3 (pour la rapidité)-perte de précision avec n=2
                 criteria=(cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER,3,1.0)
@@ -470,13 +469,12 @@ class Camera1_Thread(QThread):
                 ret, label, center=cv2.kmeans(twoDimage,K,None,criteria,attempts,cv2.KMEANS_PP_CENTERS)
                 center=np.uint8(center)
                 res=center[label.flatten()]
-                result_image=res.reshape((sImage_rgb.shape))
-                result_gray=cv2.cvtColor(result_image, cv2.COLOR_RGB2GRAY)
-                ret,th=cv2.threshold(result_gray,100,255,cv2.THRESH_BINARY_INV)
+                result_image=res.reshape((sImage[:,:,0].shape))
+                ret,th=cv2.threshold(result_image,100,255,cv2.THRESH_BINARY)
                 ret, result=cv2.threshold(cv2.bitwise_or(gray,th),253,255,cv2.THRESH_TOZERO_INV)
-                final=cv2.addWeighted(result,0.7,img_gray_fluoro,0.3,0.0)
+                final=cv2.addWeighted(result,0.6,img_gray_fluoro,0.4,0.0)
                 final=cv2.flip(final,1)
-
+                final=cv2.resize(final,(640,480),interpolation=cv2.INTER_AREA)
                 # #ancien
                 # _, th1=cv2.threshold(FlippedImage, np.mean(FlippedImage)-20, 255, cv2.THRESH_TOZERO)
                 # #sum2=cv2.bitwise_and(FlippedImage,FlippedImage,mask=th1)
