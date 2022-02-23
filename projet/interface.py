@@ -21,7 +21,7 @@ try:
     for p in ports:
         if "Arduino" in p[1]:
             arduino_port = p[0]
-    ser = serial.Serial(arduino_port, 9600)
+    ser = serial.Serial('COM3' , 9600) ###arduino_port
 except:
     print('No Arduino Port')
 
@@ -191,19 +191,15 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera1Active:
             self.thread1.stop()
-            #self.pushButton_camera1.setText('Activer')
             self.pushButton_camera1.setToolTip('Activer')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
-            #self.pushButton_cameraTraitee.setText('Activer')
             self.pushButton_cameraTraitee.setToolTip('Activer')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera1Active = False
         else:
             self.startCamera1()
-            #self.pushButton_camera1.setText('Désactiver')
             self.pushButton_camera1.setToolTip('Désactiver')
             self.pushButton_camera1.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
-            #self.pushButton_cameraTraitee.setText('Désactiver')
             self.pushButton_cameraTraitee.setToolTip('Désactiver')
             self.pushButton_cameraTraitee.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera1Active = True
@@ -212,13 +208,11 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera2Active:
             self.thread2.stop()
-            #self.pushButton_camera2.setText('Activer')
             self.pushButton_camera2.setToolTip('Activer')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera2Active = False
         else:
             self.startCamera2()
-            #self.pushButton_camera2.setText('Désactiver')
             self.pushButton_camera2.setToolTip('Désactiver')
             self.pushButton_camera2.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera2Active = True
@@ -227,13 +221,11 @@ class Controller(QMainWindow):
         '''Stop or activate camera 1 feed'''
         if self.camera3Active:
             self.thread2.stop()
-            #self.pushButton_camera3.setText('Activer')
             self.pushButton_camera3.setToolTip('Activer')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-play-white.png"))
             self.camera3Active = False
         else:
             self.startCamera2()
-            #self.pushButton_camera3.setText('Désactiver')
             self.pushButton_camera3.setToolTip('Désactiver')
             self.pushButton_camera3.setIcon(QIcon(os.getcwd()+"\\icones\\icon-pause-white.png"))
             self.camera3Active = True
@@ -285,7 +277,7 @@ class Controller(QMainWindow):
                 ser.write(steps_byte)
                 self.current_angle = angle
         except:
-            self.showErrorPopup('moving motor')
+            self.showErrorPopup('turning motor')
 
 
     def update_status_bar(self, text=''):
@@ -312,13 +304,6 @@ class Controller(QMainWindow):
         if newAngle >= -45:
             self.horizontalSlider.setValue(newAngle)
             self.updateAngle()
-
-            try:
-                steps = int(np.round(self.steps_per_deg * rotation))
-                steps_byte = bytes(str(steps), 'utf-8')
-                ser.write(steps_byte)
-            except:
-                self.showErrorPopup('rotating left the motor')
         else:
             self.showErrorPopup('rotating, angle exceeds the range of rotation')
 
@@ -331,13 +316,6 @@ class Controller(QMainWindow):
         if newAngle <= 45:
             self.horizontalSlider.setValue(newAngle)
             self.updateAngle()
-
-            try:
-                steps = int(np.round(self.steps_per_deg * rotation))
-                steps_byte = bytes(str(steps), 'utf-8')
-                ser.write(steps_byte)
-            except:
-                self.showErrorPopup('rotating right the motor')
         else:
             self.showErrorPopup('rotating, angle exceeds the range of rotation')
 
@@ -419,6 +397,8 @@ class Camera1_Thread(QThread):
             ##print(self.image_label1.width())
             ##print(self.image_label1.height())
             ##
+
+            # Redimensionnalisation de l'image fluoroscopique
             simg=img_fluoro[0:512,0:350]
             simg=cv2.resize(simg,(320,240),interpolation=cv2.INTER_AREA)
             img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
@@ -431,6 +411,7 @@ class Camera1_Thread(QThread):
                 
                 FlippedImage = cv2.flip(frame, 1)
 
+                #Calcul des fps
                 new_frame_time = time.time()
                 fps = int(1/(new_frame_time-prev_frame_time))
                 prev_frame_time = new_frame_time
@@ -452,36 +433,42 @@ class Camera1_Thread(QThread):
                 ####
 
                 # Processed camera 1 image (x ray)
-                #sImage=Image[0:480, 0:640]
+                #Diminution de la taille pour accélérer l'algo
                 sImage=cv2.pyrDown(frame)
-                gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
-                #FlippedImage = cv2.flip(gray, 1)
-
+                #Test pour une reduction de la qualité une seconde fois
+                #sImage=cv2.pyrDown(sImage)
                 
-                #nouveau
-                #test=cv2.cvtColor(sImage, cv2.COLOR_BGR2RGB)
+                gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
+                
+                #Preparation pour Kmeans
                 twoDimage=sImage[:,:,0].reshape((-1,1))
                 twoDimage=np.float32(twoDimage)
                 #Nombre d'iteration 2-3 (pour la rapidité)-perte de précision avec n=2
-                criteria=(cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER,3,1.0)
+                #Algorithme K moyens
+                criteria=(cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER,2,1.0)
                 K=3
-                attempts=3
+                attempts=2
                 ret, label, center=cv2.kmeans(twoDimage,K,None,criteria,attempts,cv2.KMEANS_PP_CENTERS)
                 center=np.uint8(center)
                 res=center[label.flatten()]
+                #Resultat des Kmoyens
                 result_image=res.reshape((sImage[:,:,0].shape))
+
+                #Threshold pour le choix catégorie d'intensité de pixels correspondant au cathéter
                 ret,th=cv2.threshold(result_image,100,255,cv2.THRESH_BINARY)
+                #Threshold pour appliquer le cathéter en noir sur limage grayscale
                 ret, result=cv2.threshold(cv2.bitwise_or(gray,th),253,255,cv2.THRESH_TOZERO_INV)
+                #Ajout de l'image grayscale avec cathéter à l'image de fluoroscopie
                 final=cv2.addWeighted(result,0.6,img_gray_fluoro,0.4,0.0)
-                final=cv2.flip(final,1)
+                final=cv2.flip(result,1)
+
+                #Redimensionnalisation de l'image
                 final=cv2.resize(final,(640,480),interpolation=cv2.INTER_AREA)
-                # #ancien
-                # _, th1=cv2.threshold(FlippedImage, np.mean(FlippedImage)-20, 255, cv2.THRESH_TOZERO)
-                # #sum2=cv2.bitwise_and(FlippedImage,FlippedImage,mask=th1)
-                # #sum2=cv2.bitwise_not(sum2)
-                # #final=cv2.bitwise_and(th1,img_gray_fluoro)
-                # final=cv2.addWeighted(th1,0.6,img_gray_fluoro,0.5,0)
-                # Convert to QT format
+
+                # Alternatives à explorer: 1- Smoothing du threshold (doit etre fait apres le resize)
+                # 2-Ajout cathéter en binaire sur l'image fluoro (pas le mm poids que l'autre image)
+                # 3-Faire tests après reset de lordinateur et sans autre programmes ouverts
+                # Bon Chance 
 
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
