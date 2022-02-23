@@ -39,7 +39,7 @@ import numpy as np
 
 import cv2
 # imported fluor
-img_fluoro=cv2.imread('fluoro_1.jpg')
+img_fluoro=cv2.imread('fluoro_2.jpg')
 
 
 class Controller(QMainWindow):
@@ -399,7 +399,7 @@ class Camera1_Thread(QThread):
             ##
 
             # Redimensionnalisation de l'image fluoroscopique
-            simg=img_fluoro[0:512,0:350]
+            simg=img_fluoro
             simg=cv2.resize(simg,(320,240),interpolation=cv2.INTER_AREA)
             img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
             
@@ -438,7 +438,7 @@ class Camera1_Thread(QThread):
                 #Test pour une reduction de la qualité une seconde fois
                 #sImage=cv2.pyrDown(sImage)
                 
-                gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
+                #gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
                 
                 #Preparation pour Kmeans
                 twoDimage=sImage[:,:,0].reshape((-1,1))
@@ -454,13 +454,14 @@ class Camera1_Thread(QThread):
                 #Resultat des Kmoyens
                 result_image=res.reshape((sImage[:,:,0].shape))
 
-                #Threshold pour le choix catégorie d'intensité de pixels correspondant au cathéter
-                ret,th=cv2.threshold(result_image,100,255,cv2.THRESH_BINARY)
-                #Threshold pour appliquer le cathéter en noir sur limage grayscale
-                ret, result=cv2.threshold(cv2.bitwise_or(gray,th),253,255,cv2.THRESH_TOZERO_INV)
-                #Ajout de l'image grayscale avec cathéter à l'image de fluoroscopie
-                final=cv2.addWeighted(result,0.6,img_gray_fluoro,0.4,0.0)
-                final=cv2.flip(result,1)
+                ret,th=cv2.threshold(result_image,150,255,cv2.THRESH_BINARY)
+                gray=cv2.cvtColor(sImage,cv2.COLOR_BGR2GRAY)+50
+                th=cv2.blur(th,(5,5))
+                result_image=cv2.bitwise_or(gray,th)
+                result_image=cv2.bitwise_not(result_image)
+
+                final=cv2.addWeighted(result_image,0.6,img_gray_fluoro,0.4,0.0)
+                final=cv2.flip(final,1)
 
                 #Redimensionnalisation de l'image
                 final=cv2.resize(final,(640,480),interpolation=cv2.INTER_AREA)

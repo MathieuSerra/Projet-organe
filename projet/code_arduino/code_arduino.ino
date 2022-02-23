@@ -12,6 +12,7 @@ void setup() {
 void loop() {
   if (Serial.available() > 0){
     value = Serial.parseInt();
+    //value = -100;
     
     if (value < 0)
     {
