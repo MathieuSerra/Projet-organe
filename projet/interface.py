@@ -547,8 +547,10 @@ if __name__ == '__main__':
     #app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
 
     from qt_material import apply_stylesheet
-    apply_stylesheet(app, theme='my_theme.xml')
+    apply_stylesheet(app, theme='my_theme.xml', extra={'font_size': '18px',})
 
+
+    #app.setStyleSheet("QLabel{font-size: 18pt;}")
     #app.setStyle("Fusion")
 
     #dark_palette = QPalette()
