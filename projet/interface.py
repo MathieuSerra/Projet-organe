@@ -45,9 +45,6 @@ img_fluoro=cv2.imread('fluoro_2.jpg')
 class Controller(QMainWindow):
     '''Class for the app's main window'''
 
-    sig_update_progress = pyqtSignal(int) #Signal for progress bar in status bar
-    sig_update_motor_angle = pyqtSignal(int) ###
-
     def __init__(self):
         QMainWindow.__init__(self)
 
@@ -69,11 +66,11 @@ class Controller(QMainWindow):
         self.camera2Active = True
         self.camera3Active = True
 
-        self.frameOrder = {'Caméra principale (traitée)':self.label_cam0, \
-            'Caméra principale (non traitée)':self.label_cam1, \
+        self.frameOrder = {'Caméra principale traitée':self.label_cam0, \
+            'Caméra principale non traitée':self.label_cam1, \
             'Caméra secondaire gauche':self.label_cam2, \
             'Caméra secondaire droite':self.label_cam3}
-        self.zoom = 'Caméra principale (traitée)'
+        self.zoom = 'Caméra principale traitée'
 
         # Initiate buttons
         self.pushButton_camera1.clicked.connect(self.activateDeactivateCam1)
@@ -111,18 +108,6 @@ class Controller(QMainWindow):
         self.thread3 = Camera3_Thread()
         self.startCamera3()
 
-        # Create status bar
-        self.label_statusBar = QLabel()
-        self.progress_statusBar = QProgressBar()
-        self.statusbar.addPermanentWidget(self.label_statusBar)
-        self.statusbar.addPermanentWidget(self.progress_statusBar)
-        self.progress_statusBar.hide()
-        self.progress_statusBar.setFixedWidth(250)
-
-        self.sig_update_progress.connect(self.progress_statusBar.setValue)
-
-        #self.sig_update_motor_angle.connect(self.updateAngle)
-
     def startCamera1(self):
         '''Start camera 1'''
         try:
@@ -151,20 +136,20 @@ class Controller(QMainWindow):
     def imageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
 
-        if self.frameOrder['Caméra principale (non traitée)'] != self.label_cam0:
+        if self.frameOrder['Caméra principale non traitée'] != self.label_cam0:
             Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
             Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
-        self.frameOrder['Caméra principale (non traitée)'].setPixmap(QPixmap.fromImage(Image))
+        self.frameOrder['Caméra principale non traitée'].setPixmap(QPixmap.fromImage(Image))
 
     def imageUpdateSlotXray(self, Image):
         '''Update camera 1 image with the Xray images emitted by the thread'''
 
-        if self.frameOrder['Caméra principale (traitée)'] != self.label_cam0:
+        if self.frameOrder['Caméra principale traitée'] != self.label_cam0:
             Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
             Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
-        self.frameOrder['Caméra principale (traitée)'].setPixmap(QPixmap.fromImage(Image))
+        self.frameOrder['Caméra principale traitée'].setPixmap(QPixmap.fromImage(Image))
 
 
     def imageUpdateSlot2(self, Image):
@@ -240,7 +225,6 @@ class Controller(QMainWindow):
         self.frameOrder[previousZoom] = self.label_cam1
         self.frameOrder[self.zoom] = self.label_cam0
 
-
     def zoomCam2(self):
         ''' '''
         previousZoom = self.groupBox_frame0.title()
@@ -278,12 +262,6 @@ class Controller(QMainWindow):
                 self.current_angle = angle
         except:
             self.showErrorPopup('turning motor')
-
-
-    def update_status_bar(self, text=''):
-        '''Updates the status bar text'''
-
-        self.label_statusBar.setText(text)
 
     def showErrorPopup(self, error=''):
         '''Shows error popup'''
@@ -408,8 +386,8 @@ class Camera1_Thread(QThread):
                 #start_time = time.time() # start time of the loop
 
                 # Original camera 1 image
-                
-                FlippedImage = cv2.flip(frame, 1)
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
+                FlippedImage = cv2.flip(rgb_frame, 1)
 
                 #Calcul des fps
                 new_frame_time = time.time()
