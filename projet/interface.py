@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 #from tqdm import tqdm
 import webbrowser
-
+import cv2
 # Communication with C-ARM
 import serial
 import serial.tools.list_ports
@@ -25,6 +25,35 @@ try:
 except:
     print('No Arduino Port')
 
+### FIND CAMERA INDEX ###
+device1 = 'None'
+device2 = 'None'
+device3 = 'None'
+indices = [0,1,2,3,4,5]
+for i in indices:
+    device = indices[i]
+    try :
+        cap = cv2.VideoCapture(device, cv2.CAP_DSHOW)
+        while True:
+            ret,frame=cap.read()
+            cv2.imshow('frame'+str(device),frame)
+            #if cv2.waitKey(1) == ord('q'):
+            contrast = cap.get(cv2.CAP_PROP_CONTRAST)
+            print(contrast)
+            if contrast == 5.0:
+                device1 = device
+            if contrast == 50.0:
+                device2 = device
+            if contrast == 10.0:
+                device3 = device
+            break
+        cap.release()
+        cv2.destroyAllWindows()
+    except cv2.error as error :
+        print("[Error]: {}".format(error))
+print(device1)
+print(device2)
+print(device3)
 # Qt imports
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
@@ -37,7 +66,7 @@ import qdarkstyle ##
 import numpy as np
 #from matplotlib import pyplot as plt
 
-import cv2
+
 # imported fluor
 img_fluoro=cv2.imread('fluoro_2.jpg')
 
@@ -47,7 +76,6 @@ class Controller(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-
         self.current_angle = 0
         self.steps_per_deg = 1600/360
         self.angleIncrement = 5
@@ -363,8 +391,8 @@ class Camera1_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        VideoDevice1 = 0 ##2 ##0 ##À changer selon le device # Webcam
-        Capture = cv2.VideoCapture(VideoDevice1, cv2.CAP_DSHOW)
+        #VideoDevice1 = 0 ##2 ##0 ##À changer selon le device # Webcam
+        Capture = cv2.VideoCapture(device1, cv2.CAP_DSHOW)
         #img=cv2.imread('fluoro_1.jpg')
         
         prev_frame_time = 0
@@ -470,13 +498,12 @@ class Camera1_Thread(QThread):
 
 class Camera2_Thread(QThread):
     '''Thread that emits a QT image from camera 2'''
-
     imageUpdate2 = pyqtSignal(QImage)
     
     def run(self):
         self.threadActive = True
-        VideoDevice2 = 1
-        Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
+        #VideoDevice2 = 1
+        Capture = cv2.VideoCapture(device2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
         prev_frame_time = 0
         new_frame_time = 0
@@ -506,13 +533,12 @@ class Camera2_Thread(QThread):
 
 class Camera3_Thread(QThread):
     '''Thread that emits a QT image from camera 3'''
-
     imageUpdate3 = pyqtSignal(QImage)
     
     def run(self):
         self.threadActive = True
-        VideoDevice3 = 3
-        Capture = cv2.VideoCapture(VideoDevice3, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
+        #VideoDevice3 = 3
+        Capture = cv2.VideoCapture(device3, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
         prev_frame_time = 0
         new_frame_time = 0
