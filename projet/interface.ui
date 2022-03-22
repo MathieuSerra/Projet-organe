@@ -33,7 +33,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Caméra principale non traitée</string>
+           <string>Image originale</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -165,7 +165,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Caméra secondaire gauche</string>
+           <string>Image secondaire gauche</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -290,7 +290,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Caméra secondaire droite</string>
+           <string>Image secondaire droite</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -419,7 +419,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Caméra principale traitée</string>
+           <string>Simulation</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -767,7 +767,7 @@
      <x>0</x>
      <y>0</y>
      <width>955</width>
-     <height>21</height>
+     <height>18</height>
     </rect>
    </property>
   </widget>

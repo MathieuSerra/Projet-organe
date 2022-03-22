@@ -21,7 +21,7 @@ try:
     for p in ports:
         if "Arduino" in p[1]:
             arduino_port = p[0]
-    ser = serial.Serial('COM3' , 9600) ###arduino_port
+    ser = serial.Serial(arduino_port , 9600) ###arduino_port
 except:
     print('No Arduino Port')
 
@@ -66,11 +66,11 @@ class Controller(QMainWindow):
         self.camera2Active = True
         self.camera3Active = True
 
-        self.frameOrder = {'Caméra principale traitée':self.label_cam0, \
-            'Caméra principale non traitée':self.label_cam1, \
-            'Caméra secondaire gauche':self.label_cam2, \
-            'Caméra secondaire droite':self.label_cam3}
-        self.zoom = 'Caméra principale traitée'
+        self.frameOrder = {'Simulation':self.label_cam0, \
+            'Image originale':self.label_cam1, \
+            'Image secondaire gauche':self.label_cam2, \
+            'Image secondaire droite':self.label_cam3}
+        self.zoom = 'Simulation'
 
         # Initiate buttons
         self.pushButton_camera1.clicked.connect(self.activateDeactivateCam1)
@@ -136,40 +136,40 @@ class Controller(QMainWindow):
     def imageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
 
-        if self.frameOrder['Caméra principale non traitée'] != self.label_cam0:
+        if self.frameOrder['Image originale'] != self.label_cam0:
             Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
             Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
-        self.frameOrder['Caméra principale non traitée'].setPixmap(QPixmap.fromImage(Image))
+        self.frameOrder['Image originale'].setPixmap(QPixmap.fromImage(Image))
 
     def imageUpdateSlotXray(self, Image):
         '''Update camera 1 image with the Xray images emitted by the thread'''
 
-        if self.frameOrder['Caméra principale traitée'] != self.label_cam0:
+        if self.frameOrder['Simulation'] != self.label_cam0:
             Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
             Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
-        self.frameOrder['Caméra principale traitée'].setPixmap(QPixmap.fromImage(Image))
+        self.frameOrder['Simulation'].setPixmap(QPixmap.fromImage(Image))
 
 
     def imageUpdateSlot2(self, Image):
         '''Update camera 2 image with the images emitted by the thread'''
 
-        if self.frameOrder['Caméra principale gauche'] != self.label_cam0:
+        if self.frameOrder['Image secondaire gauche'] != self.label_cam0:
             Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
             Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
-        self.frameOrder['Caméra principale gauche'].setPixmap(QPixmap.fromImage(Image))
+        self.frameOrder['Image secondaire gauche'].setPixmap(QPixmap.fromImage(Image))
 
 
     def imageUpdateSlot3(self, Image):
         '''Update camera 3 image with the images emitted by the thread'''
 
-        if self.frameOrder['Caméra principale droite'] != self.label_cam0:
+        if self.frameOrder['Image secondaire droite'] != self.label_cam0:
             Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
             Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
-        self.frameOrder['Caméra principale droite'].setPixmap(QPixmap.fromImage(Image))
+        self.frameOrder['Image secondaire droite'].setPixmap(QPixmap.fromImage(Image))
 
 
     def activateDeactivateCam1(self):
@@ -363,7 +363,7 @@ class Camera1_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        VideoDevice1 = 0##2 ##0 ##À changer selon le device # Webcam
+        VideoDevice1 = 0 ##2 ##0 ##À changer selon le device # Webcam
         Capture = cv2.VideoCapture(VideoDevice1, cv2.CAP_DSHOW)
         #img=cv2.imread('fluoro_1.jpg')
         
@@ -475,7 +475,7 @@ class Camera2_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        VideoDevice2 = 3
+        VideoDevice2 = 1
         Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
         prev_frame_time = 0
@@ -511,8 +511,8 @@ class Camera3_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        VideoDevice2 = 4
-        Capture = cv2.VideoCapture(VideoDevice2, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
+        VideoDevice3 = 3
+        Capture = cv2.VideoCapture(VideoDevice3, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
         prev_frame_time = 0
         new_frame_time = 0
