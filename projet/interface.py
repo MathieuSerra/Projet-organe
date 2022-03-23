@@ -14,7 +14,8 @@ import cv2
 # Communication with C-ARM
 import serial
 import serial.tools.list_ports
-
+import pyautogui
+width, height= pyautogui.size()
 ### AUTOMATICALLY FIND ARDUINO PORT ###
 try:
     ports = list(serial.tools.list_ports.comports())
@@ -70,7 +71,6 @@ import numpy as np
 # imported fluor
 img_fluoro=cv2.imread('fluoro_2.jpg')
 
-
 class Controller(QMainWindow):
     '''Class for the app's main window'''
 
@@ -85,8 +85,9 @@ class Controller(QMainWindow):
         self.settingsDialog = Settings_Dialog()
 
         # Load user interface
-        basepath = os.path.join(os.path.dirname(__file__))
-        uic.loadUi(os.path.join(basepath,"interface.ui"), self)
+        #basepath = os.path.join(os.path.dirname(__file__))
+        #uic.loadUi(os.path.join(basepath,"interface.ui"), self)
+        uic.loadUi("interface.ui", self)
         self.showMaximized()
 
         # Initialize status variables
@@ -165,18 +166,22 @@ class Controller(QMainWindow):
         '''Update camera 1 image with the images emitted by the thread'''
 
         if self.frameOrder['Image originale'] != self.label_cam0:
-            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
+            #Image = Image.scaled(225,225, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
+            #Image = Image.scaled(900,900, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
         self.frameOrder['Image originale'].setPixmap(QPixmap.fromImage(Image))
 
     def imageUpdateSlotXray(self, Image):
         '''Update camera 1 image with the Xray images emitted by the thread'''
 
         if self.frameOrder['Simulation'] != self.label_cam0:
-            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
+            #Image = Image.scaled(225,225, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
+            #Image = Image.scaled(900,900, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
         self.frameOrder['Simulation'].setPixmap(QPixmap.fromImage(Image))
 
 
@@ -184,9 +189,11 @@ class Controller(QMainWindow):
         '''Update camera 2 image with the images emitted by the thread'''
 
         if self.frameOrder['Image secondaire gauche'] != self.label_cam0:
-            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
+            #Image = Image.scaled(225,225, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
+            #Image = Image.scaled(900,900, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
         self.frameOrder['Image secondaire gauche'].setPixmap(QPixmap.fromImage(Image))
 
 
@@ -194,9 +201,11 @@ class Controller(QMainWindow):
         '''Update camera 3 image with the images emitted by the thread'''
 
         if self.frameOrder['Image secondaire droite'] != self.label_cam0:
-            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
+            #Image = Image.scaled(225,225, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
+            #Image = Image.scaled(900,900, Qt.KeepAspectRatio)
+            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
         self.frameOrder['Image secondaire droite'].setPixmap(QPixmap.fromImage(Image))
 
 
@@ -373,8 +382,9 @@ class Settings_Dialog(QDialog):
         QDialog.__init__(self)
         
         #Loading user interface
-        basepath = os.path.join(os.path.dirname(__file__))
-        uic.loadUi(os.path.join(basepath,"settings.ui"), self)
+        #basepath = os.path.join(os.path.dirname(__file__))
+        #uic.loadUi(os.path.join(basepath,"settings.ui"), self)
+        uic.loadUi("settings.ui", self)
         
         #Loading preset
         self.loadPreset()
