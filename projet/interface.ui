@@ -17,7 +17,11 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Organe-X</string>
+   <string>AlgiX</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icones/logo.png</normaloff>icones/logo.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout" stretch="3">
@@ -767,7 +771,7 @@
      <x>0</x>
      <y>0</y>
      <width>955</width>
-     <height>18</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
