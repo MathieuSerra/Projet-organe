@@ -6,31 +6,34 @@ import sys
 sys.path.append("..")
 import os
 import time
-import numpy as np
+#qimport h5py
+from datetime import datetime
+#from tqdm import tqdm
 import webbrowser
 import cv2
-from qt_material import apply_stylesheet
+# Communication with C-ARM
 import serial
-import pyautogui
-width, height= pyautogui.size()
+import serial.tools.list_ports
 
-# Qt imports
-from PyQt5 import uic
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+### AUTOMATICALLY FIND ARDUINO PORT ###
 
-# Automatically find Arduino port for communication with C-Arm
 try:
     ports = list(serial.tools.list_ports.comports())
     for p in ports:
         if "Arduino" in p[1]:
             arduino_port = p[0]
+    ser = serial.Serial(arduino_port , 9600) ###arduino_port
+except:
+    arduino_port='COM3'
+    print('No Arduino Port')
+try:
     ser = serial.Serial(arduino_port , 9600)
 except:
-    print('No Arduino Port')
+    
+    print('No Arduino Port2')
 
-# Automatically find camera indexes
+
+### FIND CAMERA INDEX ###
 device1 = 'None'
 device2 = 'None'
 device3 = 'None'
@@ -38,10 +41,11 @@ indices = [0,1,2,3,4,5]
 for i in indices:
     device = indices[i]
     try :
-        cap = cv2.VideoCapture(device, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(device)#, cv2.CAP_DSHOW)
         while True:
             ret,frame=cap.read()
             cv2.imshow('frame'+str(device),frame)
+            #if cv2.waitKey(1) == ord('q'):
             contrast = cap.get(cv2.CAP_PROP_CONTRAST)
             print(contrast)
             if contrast == 5.0:
@@ -55,30 +59,50 @@ for i in indices:
         cv2.destroyAllWindows()
     except cv2.error as error :
         print("[Error]: {}".format(error))
+print(device1)
+print(device2)
+print(device3)
+# Qt imports
+from PyQt5 import uic
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+#import qdarkstyle ##
+
+# Calculation imports
+#import math
+import numpy as np
+#from matplotlib import pyplot as plt
+
+
+# imported fluor
+img_fluoro=cv2.imread('fluoro_2.jpg')
+
 
 class Controller(QMainWindow):
     '''Class for the app's main window'''
 
     def __init__(self):
         QMainWindow.__init__(self)
+        self.current_angle = 0
+        self.steps_per_deg = 1600/360
+        self.angleIncrement = 5
+        self.showFps = False
 
-        #Instantiate settings window
+        #Instantiating the settings and properties windows
         self.settingsDialog = Settings_Dialog()
 
         # Load user interface
+        #basepath = os.path.join(os.path.dirname(__file__))
+        #uic.loadUi(os.path.join(basepath,"interface.ui"), self)
         uic.loadUi("interface.ui", self)
         self.showMaximized()
 
         # Initialize status variables
-        self.showFps = False
         self.camera1Active = True
         self.camera2Active = True
         self.camera3Active = True
 
-        # Initialize other variables
-        self.current_angle = 0
-        self.steps_per_deg = 1600/360
-        self.angleIncrement = 5
         self.frameOrder = {'Simulation':self.label_cam0, \
             'Image originale':self.label_cam1, \
             'Image secondaire gauche':self.label_cam2, \
@@ -95,8 +119,8 @@ class Controller(QMainWindow):
         self.pushButton_zoom2.clicked.connect(self.zoomCam2)
         self.pushButton_zoom3.clicked.connect(self.zoomCam3)
 
-        self.pushButton_rotateLeft.clicked.connect(self.rotateLeft)
-        self.pushButton_rotateRight.clicked.connect(self.rotateRight)
+        self.pushButton_rotateLeft.clicked.connect(self.rotate_left)
+        self.pushButton_rotateRight.clicked.connect(self.rotate_right)
         self.horizontalSlider.setTracking(False)
         self.horizontalSlider.valueChanged.connect(self.updateAngle)
         self.horizontalSlider.valueChanged.connect(self.turnAngle)
@@ -106,16 +130,18 @@ class Controller(QMainWindow):
         self.pushButton_infos.clicked.connect(self.openHelp)
         self.pushButton_settings.clicked.connect(self.openSettingsDialog)
 
-        # Connect settings options
+        #Connect settings options
         self.settingsDialog.buttonBox.accepted.connect(self.changeSettings)
         self.settingsDialog.buttonBox.rejected.connect(self.cancelSettings)
         self.updateAngleToolTip()
 
-        # Start camera threads
+        # Start camera thread
         self.thread1 = Camera1_Thread()
         self.startCamera1()
+
         self.thread2 = Camera2_Thread()
         self.startCamera2()
+
         self.thread3 = Camera3_Thread()
         self.startCamera3()
 
@@ -147,39 +173,39 @@ class Controller(QMainWindow):
     def imageUpdateSlot(self, Image):
         '''Update camera 1 image with the images emitted by the thread'''
 
-        if self.frameOrder['Image originale'] != self.label_cam0: # If zoom on original image
-            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
+        if self.frameOrder['Image originale'] != self.label_cam0:
+            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
+            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
         self.frameOrder['Image originale'].setPixmap(QPixmap.fromImage(Image))
 
     def imageUpdateSlotXray(self, Image):
         '''Update camera 1 image with the Xray images emitted by the thread'''
 
-        if self.frameOrder['Simulation'] != self.label_cam0: # If zoom on simulation image
-            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
+        if self.frameOrder['Simulation'] != self.label_cam0:
+            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
+            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
         self.frameOrder['Simulation'].setPixmap(QPixmap.fromImage(Image))
 
 
     def imageUpdateSlot2(self, Image):
         '''Update camera 2 image with the images emitted by the thread'''
 
-        if self.frameOrder['Image secondaire gauche'] != self.label_cam0: # If zoom on left camera image
-            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
+        if self.frameOrder['Image secondaire gauche'] != self.label_cam0:
+            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
+            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
         self.frameOrder['Image secondaire gauche'].setPixmap(QPixmap.fromImage(Image))
 
 
     def imageUpdateSlot3(self, Image):
         '''Update camera 3 image with the images emitted by the thread'''
 
-        if self.frameOrder['Image secondaire droite'] != self.label_cam0: # If zoom on right camera image
-            Image = Image.scaled((int(width*0.15)), (int(height*0.15)), Qt.KeepAspectRatio)
+        if self.frameOrder['Image secondaire droite'] != self.label_cam0:
+            Image = Image.scaled(int(self.width()*0.2), int(self.height()*0.2), Qt.KeepAspectRatio)
         else:
-            Image = Image.scaled((int(width*0.58)), (int(height*0.58)), Qt.KeepAspectRatio)
+            Image = Image.scaled(int(self.width()*0.7), int(self.height()*0.7), Qt.KeepAspectRatio)
         self.frameOrder['Image secondaire droite'].setPixmap(QPixmap.fromImage(Image))
 
 
@@ -227,7 +253,7 @@ class Controller(QMainWindow):
             self.camera3Active = True
 
     def zoomCam1(self):
-        '''Focus on the camera that's currently in frame 1'''
+        ''' '''
         previousZoom = self.groupBox_frame0.title()
         self.zoom = self.groupBox_frame1.title()
         self.groupBox_frame0.setTitle(self.zoom)
@@ -237,7 +263,7 @@ class Controller(QMainWindow):
         self.frameOrder[self.zoom] = self.label_cam0
 
     def zoomCam2(self):
-        '''Focus on the camera that's currently in frame 2'''
+        ''' '''
         previousZoom = self.groupBox_frame0.title()
         self.zoom = self.groupBox_frame2.title()
         self.groupBox_frame0.setTitle(self.zoom)
@@ -247,7 +273,7 @@ class Controller(QMainWindow):
         self.frameOrder[self.zoom] = self.label_cam0
 
     def zoomCam3(self):
-        '''Focus on the camera that's currently in frame 3'''
+        ''' '''
         previousZoom = self.groupBox_frame0.title()
         self.zoom = self.groupBox_frame3.title()
         self.groupBox_frame0.setTitle(self.zoom)
@@ -257,16 +283,14 @@ class Controller(QMainWindow):
         self.frameOrder[self.zoom] = self.label_cam0
     
     def updateAngle(self):
-        '''Update the current angle of the motor'''
         angle = self.horizontalSlider.value()
         self.label_angle.setText('Angle : '+str(angle)+'°')
 
     def turnAngle(self):
-        '''Turn the motor of a certain angle value'''
         try:
             angle = self.horizontalSlider.value()
             angle = int(angle)
-            if angle != self.current_angle : # If desired angle different from current one
+            if angle != self.current_angle :
                 rotation = angle - self.current_angle
                 rotation = float(rotation)
                 steps = int(np.round(self.steps_per_deg * rotation))
@@ -287,9 +311,9 @@ class Controller(QMainWindow):
         error_popup.setDefaultButton(QMessageBox.Ok)
         error_popup.exec_()
 
-    def rotateLeft(self):
-        '''Rotate left the motor'''
-        rotation = float(self.angleIncrement) * -1
+    def rotate_left(self):
+        '''Rotates left the motor'''
+        rotation = float(self.angleIncrement) * -1 ####
 
         newAngle = self.horizontalSlider.value() + int(rotation)
         if newAngle >= -45:
@@ -299,8 +323,8 @@ class Controller(QMainWindow):
             self.showErrorPopup('rotating, angle exceeds the range of rotation')
 
 
-    def rotateRight(self):
-        '''Rotate right the motor'''
+    def rotate_right(self):
+        '''Rotates right the motor'''
         rotation = float(self.angleIncrement)
 
         newAngle = self.horizontalSlider.value() + int(rotation)
@@ -312,7 +336,7 @@ class Controller(QMainWindow):
 
     def openHelp(self):
         '''Open help documentation for the program (PDF)'''
-        webbrowser.open_new('Guide.pdf') 
+        webbrowser.open_new('Guide.pdf') ##
 
     def openSettingsDialog(self):
         '''Open the dialog window for modification of settings'''
@@ -331,10 +355,15 @@ class Controller(QMainWindow):
         self.settingsDialog.checkBox_fps.setChecked(self.showFps)
         self.settingsDialog.accept()
 
+
     def updateAngleToolTip(self):
-        '''Changes the tooltip for the rotations' buttons according to the current angle increment'''
         self.pushButton_rotateLeft.setToolTip('Tourner de -' + str(self.angleIncrement) + '° (sens anti-horaire)')
         self.pushButton_rotateRight.setToolTip('Tourner de ' + str(self.angleIncrement) + '° (sens horaire)')
+
+#    def resizeEvent(self, event):
+#        '''Executes when the main window is resized'''
+#        pass
+        #self.label.resize(self.width(), self.height())
 
     def closeEvent(self, event):
         '''Making sure that everything is closed when the user exits the software.
@@ -353,6 +382,8 @@ class Settings_Dialog(QDialog):
         QDialog.__init__(self)
         
         #Loading user interface
+        #basepath = os.path.join(os.path.dirname(__file__))
+        #uic.loadUi(os.path.join(basepath,"settings.ui"), self)
         uic.loadUi("settings.ui", self)
         
         #Loading preset
@@ -370,94 +401,124 @@ class Camera1_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        # Capture image
-        Capture = cv2.VideoCapture(device1, cv2.CAP_DSHOW)
+        #VideoDevice1 = 0 ##2 ##0 ##À changer selon le device # Webcam
+        Capture = cv2.VideoCapture(device1)#, cv2.CAP_DSHOW)
+        #img=cv2.imread('fluoro_1.jpg')
         
         prev_frame_time = 0
         new_frame_time = 0
         start_time = 0
-
+        frame_width = int(Capture.get(3))
+        frame_height = int(Capture.get(4))
         while self.threadActive:
+            ##print(self.image_label1.width())
+            ##print(self.image_label1.height())
+            ##
 
-            # Import and adjust fluoroscopic image for background
-            simg=cv2.imread('fluoro_2.jpg')
-            simg=cv2.resize(simg,(320,240),interpolation=cv2.INTER_AREA)
+            # Redimensionnalisation de l'image fluoroscopique
+            simg=img_fluoro
+            #simg=cv2.resize(simg,(320,240),interpolation=cv2.INTER_AREA)
             img_gray_fluoro=cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
             
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
+                #start_time = time.time() # start time of the loop
 
-                # Adjust original camera 1 image
+                # Original camera 1 image
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
-                FlippedImage = cv2.flip(rgb_frame, 1)
+                FlippedImage = cv2.flip(rgb_frame, 1) # utile?
 
-                # Calculate FPS
+                #Calcul des fps
                 new_frame_time = time.time()
                 fps = int(1/(new_frame_time-prev_frame_time))
                 prev_frame_time = new_frame_time
 
-                # Show FPS for original image
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
                     cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
                 
-                # Emit original image (not modified)
-                ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
+                ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888) #Size: (640, 480) = (4,3)
+                ##Pic = ConvertToQtFormat.scaled(self.image_label1.width(), self.image_label1.height(), Qt.KeepAspectRatio) 
+                #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+                ##Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 self.imageUpdate.emit(Pic)
 
-                ####################
-                # Processed camera 1 image (x ray)
-                #Diminution de la taille pour accélérer l'algo
-                sImage=cv2.pyrDown(frame)
-                #Test pour une reduction de la qualité une seconde fois
-                #sImage=cv2.pyrDown(sImage)
-                
-                #gray=cv2.cvtColor(sImage, cv2.COLOR_BGR2GRAY)
-                
-                #Preparation pour Kmeans
-                twoDimage=sImage[:,:,0].reshape((-1,1))
-                twoDimage=np.float32(twoDimage)
-                #Nombre d'iteration 2-3 (pour la rapidité)-perte de précision avec n=2
-                #Algorithme K moyens
-                criteria=(cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER,2,1.0)
-                K=3
-                attempts=2
-                ret, label, center=cv2.kmeans(twoDimage,K,None,criteria,attempts,cv2.KMEANS_PP_CENTERS)
-                center=np.uint8(center)
-                res=center[label.flatten()]
-                #Resultat des Kmoyens
-                result_image=res.reshape((sImage[:,:,0].shape))
+                #fps = int(1 / (time.time() - start_time)) # FPS = 1 / time to process loop
+                #print("FPS: ", fps)
 
-                ret,th=cv2.threshold(result_image,150,255,cv2.THRESH_BINARY)
-                gray=cv2.cvtColor(sImage,cv2.COLOR_BGR2GRAY)+50
-                th=cv2.blur(th,(5,5))
-                result_image=cv2.bitwise_or(gray,th)
-                result_image=cv2.bitwise_not(result_image)
+                ####
 
-                final=cv2.addWeighted(result_image,0.6,img_gray_fluoro,0.4,0.0)
+                if (i%40==0):
+                    mean=np.mean(img[:,:,0])
+                i+=1
+                print (mean)
+
+                if (mean==0):
+                    ret,th=cv2.threshold(img[:,:,0],210,255,cv2.THRESH_BINARY)
+                    ret,mask=cv2.threshold(img[:,:,0],130,255,cv2.THRESH_BINARY)
+                    img_masked=cv2.bitwise_or(img[:,:,0],mask)
+                    heart=mask-th
+                    heart[heart==255]=160
+                else:
+                    ret,th=cv2.threshold(img[:,:,0],142+mean,255,cv2.THRESH_BINARY)
+                    ret,mask=cv2.threshold(img[:,:,0],42+mean,255,cv2.THRESH_BINARY)
+                    img_masked=img[:,:,0]-mask
+                    heart=mask-th
+                #heart[heart==255]=100+mean
+    
+                img_masked=img[:,:,0]*cv2.bitwise_not(mask)
+                mask=cv2.bitwise_not(mask)
+                mask[mask==255]=1
+                th2=cv2.bitwise_not(th)
+                th2[th2==255]=1
+                kernel=np.ones((3,3),np.uint8)
+                heart_erode=cv2.erode(heart,kernel,iterations=2)
+                
+                kernel2=np.ones((5,5),np.uint8)
+
+                heart_closed=cv2.morphologyEx(heart_erode,cv2.MORPH_CLOSE,kernel2)
+                
+
+                #heart_closed=cv.morphologyEx(heart_closed,cv.MORPH_CLOSE,kernel2)
+
+
+                heart_closed[heart_closed>0]=120
+                #heart_closed[heart_closed==0]=10
+                img_b=img[:,:,0]
+                img_b[img_b<120]=120
+                img_b=img_b-heart_closed
+
+                final=cv2.addWeighted((img_b),0.2,cv.cvtColor(img2,cv.COLOR_BGR2GRAY),0.8,0.0)*th2#*heart#+heart+cv.bitwise_not(th)
+                
+                final=cv2.resize(final,(frame_width,frame_height),interpolation=cv.INTER_AREA)
+                #fpsText = "FPS: " + str(fps)
+                #cv.putText(final, fpsText, (10, 50), cv.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3, cv.LINE_AA)
+                final=cv.flip(cv.rotate(final,cv.ROTATE_90_CLOCKWISE),1)
+                final=cv.cvtColor(final,cv.COLOR_GRAY2BGR)
                 final=cv2.flip(final,1)
 
                 #Redimensionnalisation de l'image
-                final=cv2.resize(final,(640,480),interpolation=cv2.INTER_AREA)
 
                 # Alternatives à explorer: 1- Smoothing du threshold (doit etre fait apres le resize)
                 # 2-Ajout cathéter en binaire sur l'image fluoro (pas le mm poids que l'autre image)
                 # 3-Faire tests après reset de lordinateur et sans autre programmes ouverts
-                # Bon Chance
-                ######################
+                # Bon Chance 
 
-                # Show FPS for modified image
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
                     cv2.putText(final, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
                 
-                # Emit modified image
-                ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8)
+                ConvertToQtFormat = QImage(final.data, final.shape[1], final.shape[0], QImage.Format_Grayscale8) #Size: (640, 480)
+                ##Pic = ConvertToQtFormat.scaled(self.image_label2.width(), self.image_label2.height(), Qt.KeepAspectRatio) 
+                #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
+                #Pic = ConvertToQtFormat.scaled(200, 150, Qt.KeepAspectRatio)
                 self.imageUpdateXray.emit(Pic)
 
                 start_time = time.time()
+
+                #print("FPS: ", int(1 / (time.time() - start_time))) # FPS = 1 / time to process loop
     
     def stop(self):
         self.threadActive = False
@@ -469,8 +530,8 @@ class Camera2_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        # Capture image
-        Capture = cv2.VideoCapture(device2, cv2.CAP_DSHOW)
+        #VideoDevice2 = 1
+        Capture = cv2.VideoCapture(device2)#, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
         prev_frame_time = 0
         new_frame_time = 0
@@ -478,22 +539,19 @@ class Camera2_Thread(QThread):
         while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
-                # Adjust image
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
 
-                # Calculate image FPS
                 new_frame_time = time.time()
                 fps = int(1/(new_frame_time-prev_frame_time))
                 prev_frame_time = new_frame_time
 
-                # Show FPS
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
                     cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
                 
-                # Emit image signal
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
+                #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 self.imageUpdate2.emit(Pic)
     
@@ -507,8 +565,8 @@ class Camera3_Thread(QThread):
     
     def run(self):
         self.threadActive = True
-        # Capture image
-        Capture = cv2.VideoCapture(device3, cv2.CAP_DSHOW)
+        #VideoDevice3 = 3
+        Capture = cv2.VideoCapture(device3)#, cv2.CAP_DSHOW) ##cv2.VideoCapture(0) # Webcam
         
         prev_frame_time = 0
         new_frame_time = 0
@@ -516,22 +574,19 @@ class Camera3_Thread(QThread):
         while self.threadActive:
             ret, frame = Capture.read()
             if ret: # If there is no issue with the capture
-                # Adjust image
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert to RGB
                 FlippedImage = cv2.flip(Image, 1)
 
-                # Calculate image FPS
                 new_frame_time = time.time()
                 fps = int(1/(new_frame_time-prev_frame_time))
                 prev_frame_time = new_frame_time
                 
-                # Show FPS
                 if controller.showFps == True:
                     fpsText = "FPS: " + str(fps)
                     cv2.putText(FlippedImage, fpsText, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 229, 255), 3, cv2.LINE_AA)
                 
-                # Emit image signal
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
+                #Pic = ConvertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
                 Pic = ConvertToQtFormat.scaled(1000, 750, Qt.KeepAspectRatio)
                 self.imageUpdate3.emit(Pic)
     
@@ -541,15 +596,42 @@ class Camera3_Thread(QThread):
 
 # Launch app
 if __name__ == '__main__':
-    # Set up app
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
+    #app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) ##
 
-    # Apply app theme
-    apply_stylesheet(app, theme='my_theme.xml', extra={'font_size': '18px',})
-    app.setWindowIcon(QIcon(os.getcwd()+"\\icones\\logo.png"))
+    #from qt_material import apply_stylesheet
+    #apply_stylesheet(app, theme='my_theme.xml', extra={'font_size': '18px',})
 
-    # Show main window
+
+    #app.setStyleSheet("QLabel{font-size: 18pt;}")
+    #app.setStyle("Fusion")
+
+    #dark_palette = QPalette()
+    #dark_palette.setColor(QPalette.Window, QColor('#346792'))
+    #dark_palette.setColor(QPalette.WindowText, Qt.white)
+    #dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
+    #dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+    #dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
+    #dark_palette.setColor(QPalette.ToolTipText, Qt.white)
+    #dark_palette.setColor(QPalette.Text, Qt.white)
+    #dark_palette.setColor(QPalette.Button, QColor('#26486B'))
+    #dark_palette.setColor(QPalette.ButtonText, Qt.white)
+    #dark_palette.setColor(QPalette.BrightText, Qt.red)
+    #dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    #dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    #dark_palette.setColor(QPalette.HighlightedText, Qt.black)
+
+    #app.setPalette(dark_palette)
+
+    #app.setStyleSheet("QMainWindow { background-color: #1A72BB }")
+    #app.setStyleSheet("QPushButton { background-color: #26486B }")
+        #"color: red;"
+         #                   "background-color: #7FFFD4;"
+          #                   "border-style: solid;"
+           #                  "border-width: 2px;"
+            #                 "border-color: #FA8072;"
+             #                "border-radius: 3px")
     controller = Controller()
     controller.show()
     sys.exit(app.exec_())
